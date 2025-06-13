@@ -130,21 +130,13 @@ pub fn main() void
     defer Vulkan.vkDestroyDescriptorPool(VulkanGlobalState._device, Camera._cameraDescriptorPool, null);
     Camera.createCameraVkDescriptorSets();
 
-//     print("{d}\n", .{@sizeOf(linux.Stat)});
-//     const AoW3_dirfd: i32 = @intCast(linux.open("Age of Wonders 3/Content", .{.ACCMODE = .RDONLY}, mode));
-// //     defer _ = linux.close(AoW3_dirfd);
-//     defer _ = CustomFS.close(AoW3_dirfd);
     const AoW3_dirfd_dst: std.posix.fd_t = CustomFS.open("AoW3", .{.ACCMODE = .RDONLY, .DIRECTORY = true});
-//     const AoW3_dirfd_dst: std.posix.fd_t = CustomFS.open("main", .{.ACCMODE = .RDONLY});
     defer _ = CustomFS.close(AoW3_dirfd_dst);
 //
 //     const AoW4_dirfd: i32 = @intCast(linux.open("Age of Wonders 4/Content", .{.ACCMODE = .RDONLY}, mode));
 //     defer _ = linux.close(AoW4_dirfd);
-//
-//
-//     var textureIndex: u64 = 0;
+
     var AoW3_archive: AoW3_clb_custom.ArchiveGPU = undefined;
-//     AoW3_archive.texturesCount = 0;
     defer AoW3_archive.unload();
 //     var AoW4_archive: AoW4_clb_custom.ArchiveGPU = undefined;
 //     defer AoW4_archive.unload();
@@ -155,10 +147,7 @@ pub fn main() void
 //     AoW4_clb_custom.clb_convert(&archiveTempMemory, "Title/Libraries/Strategic/Pickup_Strategic.clb", AoW4_dirfd);
 //     PageAllocator.unmap(archiveTempMemory);
 //     AoW4_clb_custom.clb_custom_read(arenaAllocator, "clb_custom.raw", &AoW4_archive);
-//     print("fd: {d}\n", .{@sizeOf(std.posix.fd_t)});
-//     print("NTSTATUS: {d}\n", .{@sizeOf(std.os.windows.NTSTATUS)});
     //     AoW4_clb_custom.createDescriptorsData(&AoW4_archive);
-//     print("O: {d}\n", .{@sizeOf(linux.O)});
     Hex.Create_DiffuseMaterial_VkDescriptorSetLayout(AoW3_archive.texturesCount, &AoW3_archive.descriptorSetLayout);
     Hex.Create_DiffuseMaterial_VkDescriptorPool(AoW3_archive.texturesCount, &AoW3_archive.descriptorPool);
     Hex.Create_DiffuseMaterial_VkDescriptorSet(AoW3_archive.texturesCount, AoW3_archive.textures, AoW3_archive.descriptorSetLayout, AoW3_archive.descriptorPool, &AoW3_archive.descriptorSet);
@@ -166,7 +155,6 @@ pub fn main() void
 //     print("{?}\n", .{globalState.gpa.detectLeaks()});
     // Palette
 {
-
     // Grassland 00
 //  var colorTable = [4*8]u8
 //  {
@@ -329,82 +317,126 @@ pub fn main() void
 //         Vulkan.vkFreeMemory(VulkanGlobalState._device, SquareVkIndexDeviceMemory, null);
 //     }
 }
-    const mapDimension = 100;
-    var hexsData: [mapDimension*mapDimension]Hex.HexData = undefined;
+    const mapRadius = 3;
+    comptime var hexsCount: u64 = 1;
+    comptime
+    {
+        var countAddition: u64 = 0;
+        for(0..mapRadius) |_|
+        {
+            countAddition+=6;
+            hexsCount+=countAddition;
+        }
+    }
+    var hexsData: [hexsCount]Hex.HexData = undefined;
     //
     const verticalSpacing = 1.5 * distanceSize;
     const horizontalSpacing = @sqrt(3.0) * distanceSize;
+    for(0..hexsCount) |i|
+    {
+        hexsData[i].textureIndex = 5;
+    }
+    const x_coordStatic = mapRadius * -1 * horizontalSpacing;
+    var hexIndex: u64 = 0;
+    for(1..mapRadius+1) |row|
+    {
+        const x_coord = x_coordStatic + horizontalSpacing * 0.5 * CustomMem.u64Tof32(row);
+        const y_coord = -verticalSpacing * CustomMem.u64Tof32(row);
+        for(0..mapRadius*2+1-row) |i|
+        {
+            hexsData[hexIndex].x = x_coord + horizontalSpacing * CustomMem.u64Tof32(i);
+            hexsData[hexIndex].y = y_coord;
+            hexIndex+=1;
+        }
+    }
+    for(0..mapRadius*2+1) |i|
+    {
+        hexsData[hexIndex].x = x_coordStatic + horizontalSpacing * CustomMem.u64Tof32(i);
+        hexsData[hexIndex].y = 0;
+        hexIndex+=1;
+    }
+    for(1..mapRadius+1) |row|
+    {
+        const x_coord = x_coordStatic + horizontalSpacing * 0.5 * CustomMem.u64Tof32(row);
+        const y_coord = verticalSpacing * CustomMem.u64Tof32(row);
+        for(0..mapRadius*2+1-row) |i|
+        {
+            hexsData[hexIndex].x = x_coord + horizontalSpacing * CustomMem.u64Tof32(i);
+            hexsData[hexIndex].y = y_coord;
+            hexIndex+=1;
+        }
+    }
 //     var _000_025: u64 = 0;
 //     var _025_050: u64 = 0;
 //     var _050_075: u64 = 0;
 //     var _075_100: u64 = 0;
-    for(0..mapDimension) |y|
-    {
-        for(0..mapDimension) |x|
-        {
-            const i = mapDimension*y+x;
-            const horisontal: f32 =  horizontalSpacing * CustomMem.u64Tof32(x);
-            const vertical: f32 = verticalSpacing * CustomMem.u64Tof32(y);
-            if(y % 2 == 0)
-            {
-                hexsData[i].x = horisontal;
-                hexsData[i].y = vertical;
-            }
-            else
-            {
-                hexsData[i].x = horisontal - @sqrt(3.0)/2.0*distanceSize;
-                hexsData[i].y = vertical;
-            }
-            const frequency = 1.0/32.0;
-            const noiseRes = (Simplexnoise1234.snoise2(hexsData[i].x*frequency, hexsData[i].y*frequency));
-//             const amplitude = 1.0+0.5+0.25;
-//             var noiseRes = (Simplexnoise1234.snoise2(CustomMem.u64Tof32(x)*frequency, CustomMem.u64Tof32(y)*frequency)) +
-//             0.5*(Simplexnoise1234.snoise2(2*CustomMem.u64Tof32(x)*frequency, 2*CustomMem.u64Tof32(y)*frequency)) +
-//             0.25*(Simplexnoise1234.snoise2(4*CustomMem.u64Tof32(x)*frequency, 4*CustomMem.u64Tof32(y)*frequency));
-//             noiseRes /= amplitude;
-            if(noiseRes < 0.25)
-            {
-//                 _000_025+=1;
-                hexsData[i].textureIndex = 4;
-            }
-            else if(noiseRes < 0.5)
-            {
-//                 _025_050+=1;
-                hexsData[i].textureIndex = 5;
-            }
-            else if(noiseRes < 0.75)
-            {
-//                 _050_075+=1;
-                hexsData[i].textureIndex = 9;
-            }
-            else
-            {
-//                 _075_100+=1;
-                hexsData[i].textureIndex = 11;
-            }
-//          17 — Forest 00
-//          14 — Grass 01
-//             hexsData[i].textureIndex = 9;
-//          if(i % 4 == 0)
-//          {
-//             hexsData[i].textureIndex = 4;
-//         }
-//         else if(i % 4 == 1)
+//     for(0..mapDimension) |y|
+//     {
+//         for(0..mapDimension) |x|
 //         {
-//             hexsData[i].textureIndex = 5;
+//             const i = mapDimension*y+x;
+//             const horisontal: f32 =  horizontalSpacing * CustomMem.u64Tof32(x);
+//             const vertical: f32 = verticalSpacing * CustomMem.u64Tof32(y);
+//             if(y % 2 == 0)
+//             {
+//                 hexsData[i].x = horisontal;
+//                 hexsData[i].y = vertical;
+//             }
+//             else
+//             {
+//                 hexsData[i].x = horisontal - @sqrt(3.0)/2.0*distanceSize;
+//                 hexsData[i].y = vertical;
+//             }
+//             const frequency = 1.0/32.0;
+//             const noiseRes = (Simplexnoise1234.snoise2(hexsData[i].x*frequency, hexsData[i].y*frequency));
+// //             const amplitude = 1.0+0.5+0.25;
+// //             var noiseRes = (Simplexnoise1234.snoise2(CustomMem.u64Tof32(x)*frequency, CustomMem.u64Tof32(y)*frequency)) +
+// //             0.5*(Simplexnoise1234.snoise2(2*CustomMem.u64Tof32(x)*frequency, 2*CustomMem.u64Tof32(y)*frequency)) +
+// //             0.25*(Simplexnoise1234.snoise2(4*CustomMem.u64Tof32(x)*frequency, 4*CustomMem.u64Tof32(y)*frequency));
+// //             noiseRes /= amplitude;
+//             if(noiseRes < 0.25)
+//             {
+// //                 _000_025+=1;
+//                 hexsData[i].textureIndex = 4;
+//             }
+//             else if(noiseRes < 0.5)
+//             {
+// //                 _025_050+=1;
+//                 hexsData[i].textureIndex = 5;
+//             }
+//             else if(noiseRes < 0.75)
+//             {
+// //                 _050_075+=1;
+//                 hexsData[i].textureIndex = 9;
+//             }
+//             else
+//             {
+// //                 _075_100+=1;
+//                 hexsData[i].textureIndex = 11;
+//             }
+// //          17 — Forest 00
+// //          14 — Grass 01
+// //             hexsData[i].textureIndex = 9;
+// //          if(i % 4 == 0)
+// //          {
+// //             hexsData[i].textureIndex = 4;
+// //         }
+// //         else if(i % 4 == 1)
+// //         {
+// //             hexsData[i].textureIndex = 5;
+// //         }
+// //         else if(i % 4 == 2)
+// //         {
+// //             hexsData[i].textureIndex = 9;
+// //         }
+// //         else if(i % 4 == 3)
+// //         {
+// //             hexsData[i].textureIndex = 11;
+// //         }
+// //         else
+// //         {hexsData[i].textureIndex = 0;}
 //         }
-//         else if(i % 4 == 2)
-//         {
-//             hexsData[i].textureIndex = 9;
-//         }
-//         else if(i % 4 == 3)
-//         {
-//             hexsData[i].textureIndex = 11;
-//         }
-//         else
-//         {hexsData[i].textureIndex = 0;}
-        }
-    }
+//     }
 //     print("00 — 25: {d}\n", .{_000_025});
 //     print("25 — 50: {d}\n", .{_025_050});
 //     print("50 — 75: {d}\n", .{_050_075});
@@ -414,61 +446,56 @@ pub fn main() void
     var hexsDataVkDeviceAddress: Vulkan.VkDeviceAddress = undefined;
     var hexsDataBuffer: Vulkan.VkBuffer = undefined;
     var hexsDataVkDeviceMemory: Vulkan.VkDeviceMemory = undefined;
-    VkBuffer.createVkBuffer__VkDeviceMemory__VkDeviceAddress(Vulkan.VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, @ptrCast(&hexsData), @sizeOf(Hex.HexData)*mapDimension*mapDimension, &hexsDataVkDeviceAddress,&hexsDataBuffer, &hexsDataVkDeviceMemory);
+    VkBuffer.createVkBuffer__VkDeviceMemory__VkDeviceAddress(Vulkan.VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, @ptrCast(&hexsData), @sizeOf(Hex.HexData)*hexsCount, &hexsDataVkDeviceAddress,&hexsDataBuffer, &hexsDataVkDeviceMemory);
     defer
     {
         Vulkan.vkDestroyBuffer(VulkanGlobalState._device, hexsDataBuffer, null);
         Vulkan.vkFreeMemory(VulkanGlobalState._device, hexsDataVkDeviceMemory, null);
     }
-//     const VkBufferDeviceAddressInfo = Vulkan.VkBufferDeviceAddressInfo
-//     {
-//         .sType = Vulkan.VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
-//         .buffer = HexsVertexDataVkVertexBuffer
-//     };
-//     const vertexDataVkVertexBufferAddress = Vulkan.vkGetBufferDeviceAddress(VulkanGlobalState._device, &VkBufferDeviceAddressInfo);
-//     _ = vertexDataVkVertexBufferAddress;
     // Square noise map
-    var noiseBuffer: [mapDimension*mapDimension]u8 = undefined;
-    for(0..mapDimension) |y|
-    {
-        for(0..mapDimension) |x|
-        {
-            const i = mapDimension*y+x;
-            noiseBuffer[i] = @intFromFloat((Simplexnoise1234.snoise2(CustomMem.u64Tof32(x), CustomMem.u64Tof32(y)) * 0.5 + 0.5)*255.0);
-        }
-    }
-    const noiseMap = Image.Image
-    {
-        .data = &noiseBuffer,
-        .mipSize = mapDimension*mapDimension,
-        .size = mapDimension*mapDimension,
-        .width = mapDimension,
-        .height = mapDimension,
-        .mipsCount = 1,
-        .alignment = 1,
-        .format = Vulkan.VK_FORMAT_R8_UNORM,
-    };
-    var noiseTexture: Image.Texture = undefined;
-    var noiseVkDeviceMemory: Vulkan.VkDeviceMemory = undefined;
-    VkImage.createVkImages__VkImageViews__VkDeviceMemory(@ptrCast(&noiseMap), @ptrCast(&noiseTexture), 1, &noiseVkDeviceMemory);
-    defer
-    {
-        noiseTexture.unload();
-        Vulkan.vkFreeMemory(VulkanGlobalState._device, noiseVkDeviceMemory, null);
-    }
-    //  Hex.createHexPaletteSampler();
-//      defer Vulkan.vkDestroySampler(VulkanGlobalState._device, Hex._paletteSampler, null);
-    var noiseMap_DescriptorSetLayout: Vulkan.VkDescriptorSetLayout = undefined;
-    var noiseMap_DescriptorPool: Vulkan.VkDescriptorPool = undefined;
-    var noiseMap_DescriptorSet: Vulkan.VkDescriptorSet = undefined;
-    Hex.Create_DiffuseMaterial_VkDescriptorSetLayout(1, &noiseMap_DescriptorSetLayout);
-    Hex.Create_DiffuseMaterial_VkDescriptorPool(1, &noiseMap_DescriptorPool);
-    Hex.Create_DiffuseMaterial_VkDescriptorSet(1, @ptrCast(&noiseTexture), noiseMap_DescriptorSetLayout, noiseMap_DescriptorPool, &noiseMap_DescriptorSet);
-    defer
-    {
-        Vulkan.vkDestroyDescriptorSetLayout(VulkanGlobalState._device, noiseMap_DescriptorSetLayout, null);
-        Vulkan.vkDestroyDescriptorPool(VulkanGlobalState._device, noiseMap_DescriptorPool, null);
-    }
+{
+//     var noiseBuffer: [mapDimension*mapDimension]u8 = undefined;
+//     for(0..mapDimension) |y|
+//     {
+//         for(0..mapDimension) |x|
+//         {
+//             const i = mapDimension*y+x;
+//             noiseBuffer[i] = @intFromFloat((Simplexnoise1234.snoise2(CustomMem.u64Tof32(x), CustomMem.u64Tof32(y)) * 0.5 + 0.5)*255.0);
+//         }
+//     }
+//     const noiseMap = Image.Image
+//     {
+//         .data = &noiseBuffer,
+//         .mipSize = mapDimension*mapDimension,
+//         .size = mapDimension*mapDimension,
+//         .width = mapDimension,
+//         .height = mapDimension,
+//         .mipsCount = 1,
+//         .alignment = 1,
+//         .format = Vulkan.VK_FORMAT_R8_UNORM,
+//     };
+//     var noiseTexture: Image.Texture = undefined;
+//     var noiseVkDeviceMemory: Vulkan.VkDeviceMemory = undefined;
+//     VkImage.createVkImages__VkImageViews__VkDeviceMemory(@ptrCast(&noiseMap), @ptrCast(&noiseTexture), 1, &noiseVkDeviceMemory);
+//     defer
+//     {
+//         noiseTexture.unload();
+//         Vulkan.vkFreeMemory(VulkanGlobalState._device, noiseVkDeviceMemory, null);
+//     }
+//     //  Hex.createHexPaletteSampler();
+// //      defer Vulkan.vkDestroySampler(VulkanGlobalState._device, Hex._paletteSampler, null);
+//     var noiseMap_DescriptorSetLayout: Vulkan.VkDescriptorSetLayout = undefined;
+//     var noiseMap_DescriptorPool: Vulkan.VkDescriptorPool = undefined;
+//     var noiseMap_DescriptorSet: Vulkan.VkDescriptorSet = undefined;
+//     Hex.Create_DiffuseMaterial_VkDescriptorSetLayout(1, &noiseMap_DescriptorSetLayout);
+//     Hex.Create_DiffuseMaterial_VkDescriptorPool(1, &noiseMap_DescriptorPool);
+//     Hex.Create_DiffuseMaterial_VkDescriptorSet(1, @ptrCast(&noiseTexture), noiseMap_DescriptorSetLayout, noiseMap_DescriptorPool, &noiseMap_DescriptorSet);
+//     defer
+//     {
+//         Vulkan.vkDestroyDescriptorSetLayout(VulkanGlobalState._device, noiseMap_DescriptorSetLayout, null);
+//         Vulkan.vkDestroyDescriptorPool(VulkanGlobalState._device, noiseMap_DescriptorPool, null);
+//     }
+}
     var Hex_Pipeline: Vulkan.VkPipeline = null;
     var Hex_PipelineLayout: Vulkan.VkPipelineLayout = null;
     Hex.Create_Hex_Pipeline(AoW3_archive.descriptorSetLayout, &Hex_PipelineLayout, &Hex_Pipeline);
@@ -477,14 +504,14 @@ pub fn main() void
         Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Hex_Pipeline, null);
         Vulkan.vkDestroyPipelineLayout(VulkanGlobalState._device, Hex_PipelineLayout, null);
     }
-    var Square_Pipeline: Vulkan.VkPipeline = null;
-    var Square_PipelineLayout: Vulkan.VkPipelineLayout = null;
-    Square.Create_Square_Pipeline(noiseMap_DescriptorSetLayout, &Square_PipelineLayout, &Square_Pipeline);
-    defer
-    {
-        Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Square_Pipeline, null);
-        Vulkan.vkDestroyPipelineLayout(VulkanGlobalState._device, Square_PipelineLayout, null);
-    }
+//     var Square_Pipeline: Vulkan.VkPipeline = null;
+//     var Square_PipelineLayout: Vulkan.VkPipelineLayout = null;
+//     Square.Create_Square_Pipeline(noiseMap_DescriptorSetLayout, &Square_PipelineLayout, &Square_Pipeline);
+//     defer
+//     {
+//         Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Square_Pipeline, null);
+//         Vulkan.vkDestroyPipelineLayout(VulkanGlobalState._device, Square_PipelineLayout, null);
+//     }
 {
 // //  AoW4_SGH.import(arenaAllocator, "/home/dima/Документи/Paradox Interactive/Age of Wonders 4/Storage/Save/580d6c33-3bad-4d62-b7a0-134a2a01a12b/Strategic Turn 1");
 //     // Age of Wonders 4
@@ -760,7 +787,7 @@ pub fn main() void
             descriptorSets[0] = Camera._cameraDescriptorSets[currentFrame];
             descriptorSets[1] = AoW3_archive.descriptorSet;
             Vulkan.vkCmdBindDescriptorSets(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Hex_PipelineLayout, 0, descriptorSets.len, &descriptorSets, 0, null);
-            Vulkan.vkCmdDraw(VulkanGlobalState._commandBuffers[currentFrame], 12, mapDimension*mapDimension, 0, 0);
+            Vulkan.vkCmdDraw(VulkanGlobalState._commandBuffers[currentFrame], 12, hexsCount, 0, 0);
 //             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], 12, mapDimension*mapDimension, 0, 0, 0);
 
             Vulkan.vkCmdEndRendering(VulkanGlobalState._commandBuffers[currentFrame]);

@@ -3,7 +3,7 @@ const print = std.debug.print;
 
 const Vulkan = @import("Vulkan.zig");
 
-pub const enableValidationLayers: bool = false;// std.debug.runtime_safety
+pub const enableValidationLayers: bool = std.debug.runtime_safety;// std.debug.runtime_safety
 
 pub const FRAME_OVERLAP: comptime_int = 2;
 

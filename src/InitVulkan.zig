@@ -13,6 +13,14 @@ const WindowGlobalState = @import("WindowGlobalState.zig");
 
 const CustomMem = @import("CustomMem.zig");
 
+fn debugCallback(messageSeverity: Vulkan.VkDebugUtilsMessageSeverityFlagBitsEXT, messageType: Vulkan.VkDebugUtilsMessageTypeFlagsEXT, pCallbackData: [*c]const Vulkan.VkDebugUtilsMessengerCallbackDataEXT, pUserData: ?*anyopaque) callconv(.C) Vulkan.VkBool32
+{
+    _ = messageSeverity;
+    _ = messageType;
+    _ = pUserData;
+    print("validation layer: {s}\n", .{pCallbackData.*.pMessage});
+    return Vulkan.VK_FALSE;
+}
 fn createVkInstance(stackMemoryPtr: [*]u8) void
 {
     const validationLayers = [_][]const u8{"VK_LAYER_KHRONOS_validation"};

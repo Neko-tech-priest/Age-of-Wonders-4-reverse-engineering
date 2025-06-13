@@ -12,9 +12,7 @@ layout(location = 0) out vec4 outColor;
 
 void main()
 {
-	// texture(sampler2D(textureObj, samplerObj), uv);
 	vec3 color = texture(sampler2D(diffuseTextures[nonuniformEXT(inTextureIndex)], terrainSampler), inPos).rgb;
-// 	float alpha = texture(sampler2D(diffuseTextures[nonuniformEXT(inTextureIndex)], terrainSampler), inPos*sqrt(3.0)/6).a;
 // 	alpha = pow(alpha, (2.2));
 // 	vec3 color = texture(palette, vec2(alpha+0.0625, 0.0)).rgb;
 // 	color += GroundIBL*(1.0-alpha);
