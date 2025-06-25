@@ -6,6 +6,7 @@ const exit = std.process.exit;
 
 const SDL = @import("SDL3.zig");
 const Vulkan = @import("Vulkan.zig");
+// pub usingnamespace @import("Vulkan.zig");
 // const Vulkan = switch (builtin.os.tag) {
 //     .windows => @import("Vulkan_Windows.zig"),
 //     .linux => @import("Vulkan_Linux.zig"),
@@ -17,6 +18,7 @@ const WindowGlobalState = @import("WindowGlobalState.zig");
 const VulkanGlobalState = @import("VulkanGlobalState.zig");
 const VK_CHECK = VulkanGlobalState.VK_CHECK;
 //
+// pub usingnamespace @import("CustomMem.zig");
 const CustomMem = @import("CustomMem.zig");
 const CustomFS = @import("CustomFS.zig");
 // const PageAllocator = @import("PageAllocator.zig");
@@ -30,7 +32,8 @@ const InitVulkan = @import("InitVulkan.zig");
 const VkSwapchain = @import("VkSwapchain.zig");
 //
 const Camera = @import("Camera.zig");
-const Image = @import("Image.zig");
+const Image = @import("Image.zig").Image;
+const Texture = @import("Texture.zig").Texture;
 //
 const AoW3_clb_custom = @import("AoW3_clb_custom.zig");
 const AoW4_clb_custom = @import("AoW4_clb_custom.zig");
@@ -90,9 +93,9 @@ pub fn main() void
         if(is_debug)
             _ = GlobalState.debugAllocator.deinit();
     }
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const arenaAllocator = arena.allocator();
+//     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+//     defer arena.deinit();
+//     const arenaAllocator = arena.allocator();
 
 //     const memoryTest: []u8 = globalState.PageAllocator.map(1024*1024, std.mem.Alignment.fromByteUnits(4096)).?;
 //     globalState.PageAllocator.unmap(@alignCast(memoryTest));
@@ -130,43 +133,76 @@ pub fn main() void
     defer Vulkan.vkDestroyDescriptorPool(VulkanGlobalState._device, Camera._cameraDescriptorPool, null);
     Camera.createCameraVkDescriptorSets();
 
-    const AoW3_dirfd_dst: std.posix.fd_t = CustomFS.open("AoW3", .{.ACCMODE = .RDONLY, .DIRECTORY = true});
-    defer _ = CustomFS.close(AoW3_dirfd_dst);
+//     const AoW3_dirfd_dst: std.posix.fd_t = CustomFS.open("AoW3", .{.ACCMODE = .RDONLY, .DIRECTORY = true});
+//     defer _ = CustomFS.close(AoW3_dirfd_dst);
+// //
+// //     const AoW4_dirfd: i32 = @intCast(linux.open("Age of Wonders 4/Content", .{.ACCMODE = .RDONLY}, mode));
+// //     defer _ = linux.close(AoW4_dirfd);
 //
-//     const AoW4_dirfd: i32 = @intCast(linux.open("Age of Wonders 4/Content", .{.ACCMODE = .RDONLY}, mode));
-//     defer _ = linux.close(AoW4_dirfd);
-
-    var AoW3_archive: AoW3_clb_custom.ArchiveGPU = undefined;
-    defer AoW3_archive.unload();
-//     var AoW4_archive: AoW4_clb_custom.ArchiveGPU = undefined;
-//     defer AoW4_archive.unload();
+//     var AoW3_archive: AoW3_clb_custom.ArchiveGPU = undefined;
+//     defer AoW3_archive.unload();
 // //
 //     var archiveTempMemory: []u8 = undefined;
 // "Title/Libraries/Terrain/Temp_TerrainTextures.clb"
-    AoW3_clb_custom.clb_custom_read(arenaAllocator, "Title/Libraries/Terrain/Temp_TerrainTextures.clb", AoW3_dirfd_dst, &AoW3_archive);
+//     AoW3_clb_custom.clb_custom_read(arenaAllocator, "Title/Libraries/Terrain/Temp_TerrainTextures.clb", AoW3_dirfd_dst, &AoW3_archive);
 //     AoW4_clb_custom.clb_convert(&archiveTempMemory, "Title/Libraries/Strategic/Pickup_Strategic.clb", AoW4_dirfd);
 //     PageAllocator.unmap(archiveTempMemory);
-//     AoW4_clb_custom.clb_custom_read(arenaAllocator, "clb_custom.raw", &AoW4_archive);
-    //     AoW4_clb_custom.createDescriptorsData(&AoW4_archive);
-    Hex.Create_DiffuseMaterial_VkDescriptorSetLayout(AoW3_archive.texturesCount, &AoW3_archive.descriptorSetLayout);
-    Hex.Create_DiffuseMaterial_VkDescriptorPool(AoW3_archive.texturesCount, &AoW3_archive.descriptorPool);
-    Hex.Create_DiffuseMaterial_VkDescriptorSet(AoW3_archive.texturesCount, AoW3_archive.textures, AoW3_archive.descriptorSetLayout, AoW3_archive.descriptorPool, &AoW3_archive.descriptorSet);
-    _ = GlobalState.arena.reset(.free_all);
+    const AoW4_dirfd: std.posix.fd_t = CustomFS.open("AoW4", .{.ACCMODE = .RDONLY, .DIRECTORY = true});
+    defer _ = CustomFS.close(AoW4_dirfd);
+
+    var AoW4_archive: AoW4_clb_custom.ArchiveGPU = undefined;
+    defer AoW4_archive.unload();
+    AoW4_clb_custom.clb_custom_read(AoW4_dirfd, "Title/Libraries/Strategic/Terrain_Textures_Strategic.clb", &AoW4_archive);
+    AoW4_clb_custom.createDescriptorsData(&AoW4_archive);
+//     var Pickup_Strategic: AoW4_clb_custom.ArchiveCPU = undefined;
+//     defer Pickup_Strategic.unload();
+//     AoW4_clb_custom.clb_custom_read(AoW4_dirfd, "Title/Libraries/Strategic/Pickup_Strategic.clb", &Pickup_Strategic);
+//     var CrystalTree_Strategic: AoW4_clb_custom.ArchiveCPU = undefined;
+//     defer CrystalTree_Strategic.unload();
+//     AoW4_clb_custom.clb_custom_read(AoW4_dirfd, "Title/Libraries/Strategic/CrystalTree_Strategic.clb", &CrystalTree_Strategic);
+//     Hex.Create_DiffuseMaterial_VkDescriptorSetLayout(AoW3_archive.texturesCount, &AoW3_archive.descriptorSetLayout);
+//     Hex.Create_DiffuseMaterial_VkDescriptorPool(AoW3_archive.texturesCount, &AoW3_archive.descriptorPool);
+//     Hex.Create_DiffuseMaterial_VkDescriptorSet(AoW3_archive.texturesCount, AoW3_archive.textures, AoW3_archive.descriptorSetLayout, AoW3_archive.descriptorPool, &AoW3_archive.descriptorSet);
+//     _ = GlobalState.arena.reset(.free_all);
 //     print("{?}\n", .{globalState.gpa.detectLeaks()});
     // Palette
-{
+// {
     // Grassland 00
-//  var colorTable = [4*8]u8
-//  {
-//      98, 71, 41, 255,
-//      58, 71, 20, 255,
-//      84, 89, 32, 255,
-//      61, 92, 15, 255,
-//      61, 84, 20, 255,
-//      55, 92, 14, 255,
-//      46, 113, 19, 255,
-//      75, 109, 20, 255,
-//  };
+    var colorTable = [4*8]u8
+    {
+        98, 71, 41, 255,
+        58, 71, 20, 255,
+        84, 89, 32, 255,
+        61, 92, 15, 255,
+        61, 84, 20, 255,
+        55, 92, 14, 255,
+        46, 113, 19, 255,
+        75, 109, 20, 255,
+    };
+    // Grassland 00 (Tropical)
+//     var colorTable = [4*8]u8
+//     {
+//         129, 79,  43, 255,
+//         129, 79,  43, 255,
+//         62,  102, 17, 255,
+//         90,  102, 11, 255,
+//         129, 79,  43, 255,
+//         81,  102, 14, 255,
+//         59,  76,  20, 255,
+//         59,  36,  13, 255,
+//     };
+    // Grassland 01
+//      var colorTable = [4*8]u8
+//      {
+//          98, 71,  41, 255,
+//          58, 71,  20, 255,
+//          84, 89,  32, 255,
+//          54, 82,  11, 255,
+//          67, 91,  21, 255,
+//          81, 103, 29, 255,
+//          39, 53,  12, 255,
+//          86, 99,  16, 255,
+//      };
     // Forest 00
 //  var colorTable = [4*8]u8
 //  {
@@ -180,50 +216,64 @@ pub fn main() void
 //      80, 64, 17, 255,
 //  };
     // Water Deep 00
-//  var colorTable = [4*8]u8
-//  {
-//      125, 107, 62, 255,
-//      118, 101, 59, 255,
-//      111, 96, 56, 255,
-//      104, 90, 52, 255,
-//      97, 85, 50, 255,
-//      90, 79, 47, 255,
-//      83, 74, 44, 255,
-//      77, 69, 41, 255,
-//  };
-//  const palette = Image.Image
-//  {
-//      .data = &colorTable,
-//      .mipSize = 4*8,
-//      .size = 4*8,
-//      .width = 8,
-//      .height = 1,
-//      .mipsCount = 1,
-//      .alignment = 1,
-//      .format = Vulkan.VK_FORMAT_R8G8B8A8_SRGB,
-//  };
-//  var paletteTexture: Image.Texture = undefined;
-//  var paletteVkDeviceMemory: Vulkan.VkDeviceMemory = undefined;
-//  VkImage.createVkImages__VkImageViews__VkDeviceMemory(@ptrCast(&palette), @ptrCast(&paletteTexture), 1, &paletteVkDeviceMemory);
-//  defer
-//  {
-//      paletteTexture.unload();
-//      Vulkan.vkFreeMemory(VulkanGlobalState._device, paletteVkDeviceMemory, null);
-//  }
-//  Hex.createHexPaletteSampler();
-//  defer Vulkan.vkDestroySampler(VulkanGlobalState._device, Hex._paletteSampler, null);
-//  var HexsData_DescriptorSetLayout: Vulkan.VkDescriptorSetLayout = undefined;
-//  var HexsData_DescriptorPool: Vulkan.VkDescriptorPool = undefined;
-//  var HexsData_DescriptorSet: Vulkan.VkDescriptorSet = undefined;
-//  Hex.Create_HexsData_VkDescriptorSetLayout(&HexsData_DescriptorSetLayout);
-//  Hex.Create_HexsData_VkDescriptorPool(&HexsData_DescriptorPool);
-//  Hex.Create_HexsData_VkDescriptorSet(paletteTexture.vkImageView, HexsData_DescriptorSetLayout, HexsData_DescriptorPool, &HexsData_DescriptorSet);
-//  defer
-//  {
-//      Vulkan.vkDestroyDescriptorSetLayout(VulkanGlobalState._device, HexsData_DescriptorSetLayout, null);
-//      Vulkan.vkDestroyDescriptorPool(VulkanGlobalState._device, HexsData_DescriptorPool, null);
-//  }
-}
+//     var colorTable = [4*8]u8
+//     {
+//         125, 107, 62, 255,
+//         118, 101, 59, 255,
+//         111, 96,  56, 255,
+//         104, 90,  52, 255,
+//         97, 85, 50, 255,
+//         90, 79, 47, 255,
+//         83, 74, 44, 255,
+//         77, 69, 41, 255,
+//     };
+    // Rocky Limestone
+//     var colorTable = [4*8]u8
+//     {
+//         78, 100,  14, 255,
+//         49,  99,  16, 255,
+//         51,  81,  16, 255,
+//         91,  94,  44, 255,
+//         106, 87,  61, 255,
+//         115, 113, 62, 255,
+//         158, 129, 91, 255,
+//         9,   52,  4,  255,
+// //         255, 255, 255,255,
+//     };
+    const palette = Image
+    {
+        .data = &colorTable,
+        .mipSize = 4*8,
+        .size = 4*8,
+        .width = 8,
+        .height = 1,
+        .mipsCount = 1,
+        .alignment = 1,
+        .format = Vulkan.VK_FORMAT_R8G8B8A8_SRGB,
+    };
+//     _ = palette;
+    var paletteTexture: Texture = undefined;
+    var paletteVkDeviceMemory: Vulkan.VkDeviceMemory = undefined;
+    VkImage.createVkImages__VkImageViews__VkDeviceMemory(@ptrCast(&palette), @ptrCast(&paletteTexture), 1, &paletteVkDeviceMemory);
+    defer
+    {
+        paletteTexture.unload();
+        Vulkan.vkFreeMemory(VulkanGlobalState._device, paletteVkDeviceMemory, null);
+    }
+    Hex.createHexPaletteSampler();
+    defer Vulkan.vkDestroySampler(VulkanGlobalState._device, Hex._paletteSampler, null);
+    var palette_DescriptorSetLayout: Vulkan.VkDescriptorSetLayout = undefined;
+    var palette_DescriptorPool: Vulkan.VkDescriptorPool = undefined;
+    var palette_DescriptorSet: Vulkan.VkDescriptorSet = undefined;
+    Hex.createPaletteDescriptorsData(paletteTexture.vkImageView, &palette_DescriptorSetLayout, &palette_DescriptorPool, &palette_DescriptorSet);
+//     Hex.Create_palette_VkDescriptorPool(&palette_DescriptorPool);
+//     Hex.Create_palette_VkDescriptorSet(paletteTexture.vkImageView, palette_DescriptorSetLayout, palette_DescriptorPool, &palette_DescriptorSet);
+    defer
+    {
+        Vulkan.vkDestroyDescriptorSetLayout(VulkanGlobalState._device, palette_DescriptorSetLayout, null);
+        Vulkan.vkDestroyDescriptorPool(VulkanGlobalState._device, palette_DescriptorPool, null);
+    }
+// }
     // Hex
     const distanceSize = 2;
     const HexVertices = [6]Hex.Vertex
@@ -247,12 +297,12 @@ pub fn main() void
             .position = [3]f32{-@sqrt(3.0)/2.0*distanceSize, -0.5*distanceSize, 0},
         },
     };
-//     const HexIndices = [12]u16{
-//         0, 2, 4,
-//         0, 1, 2,
-//         2, 3, 4,
-//         4, 5, 0,
-//     };
+    const HexIndices = [12]u16{
+        0, 2, 4,
+        0, 1, 2,
+        2, 3, 4,
+        4, 5, 0,
+    };
     var HexVkVertexBufferAddress: Vulkan.VkDeviceAddress = undefined;
     var HexVkVertexBuffer: Vulkan.VkBuffer = undefined;
     var HexVkVertexDeviceMemory: Vulkan.VkDeviceMemory = undefined;
@@ -263,15 +313,15 @@ pub fn main() void
         Vulkan.vkDestroyBuffer(VulkanGlobalState._device, HexVkVertexBuffer, null);
         Vulkan.vkFreeMemory(VulkanGlobalState._device, HexVkVertexDeviceMemory, null);
     }
-//     var HexVkIndexBuffer: Vulkan.VkBuffer = undefined;
-//     var HexVkIndexDeviceMemory: Vulkan.VkDeviceMemory = undefined;
-//     VkBuffer.createVkBuffer__VkDeviceMemory(Vulkan.VK_BUFFER_USAGE_INDEX_BUFFER_BIT, @ptrCast(&HexIndices), @sizeOf(u16)*12, &HexVkIndexBuffer, &HexVkIndexDeviceMemory);
-// //     VkBuffer.createVkBuffer__VkDeviceMemory(Vulkan.VK_BUFFER_USAGE_INDEX_BUFFER_BIT, @ptrCast(&SquareIndices), @sizeOf(u16)*6, &HexVkIndexBuffer, &HexVkIndexDeviceMemory);
-//     defer
-//     {
-//         Vulkan.vkDestroyBuffer(VulkanGlobalState._device, HexVkIndexBuffer, null);
-//         Vulkan.vkFreeMemory(VulkanGlobalState._device, HexVkIndexDeviceMemory, null);
-//     }
+    var HexVkIndexBuffer: Vulkan.VkBuffer = undefined;
+    var HexVkIndexDeviceMemory: Vulkan.VkDeviceMemory = undefined;
+    VkBuffer.createVkBuffer__VkDeviceMemory(Vulkan.VK_BUFFER_USAGE_INDEX_BUFFER_BIT, @ptrCast(&HexIndices), @sizeOf(u16)*12, &HexVkIndexBuffer, &HexVkIndexDeviceMemory);
+//     VkBuffer.createVkBuffer__VkDeviceMemory(Vulkan.VK_BUFFER_USAGE_INDEX_BUFFER_BIT, @ptrCast(&SquareIndices), @sizeOf(u16)*6, &HexVkIndexBuffer, &HexVkIndexDeviceMemory);
+    defer
+    {
+        Vulkan.vkDestroyBuffer(VulkanGlobalState._device, HexVkIndexBuffer, null);
+        Vulkan.vkFreeMemory(VulkanGlobalState._device, HexVkIndexDeviceMemory, null);
+    }
     // Square
 {
 //     const SquareVertices = [4]Square.Vertex
@@ -317,7 +367,7 @@ pub fn main() void
 //         Vulkan.vkFreeMemory(VulkanGlobalState._device, SquareVkIndexDeviceMemory, null);
 //     }
 }
-    const mapRadius = 3;
+    const mapRadius = 2;
     comptime var hexsCount: u64 = 1;
     comptime
     {
@@ -328,13 +378,14 @@ pub fn main() void
             hexsCount+=countAddition;
         }
     }
+//     print("hexsCount: {d}\n", .{hexsCount});
     var hexsData: [hexsCount]Hex.HexData = undefined;
     //
     const verticalSpacing = 1.5 * distanceSize;
     const horizontalSpacing = @sqrt(3.0) * distanceSize;
     for(0..hexsCount) |i|
     {
-        hexsData[i].textureIndex = 5;
+        hexsData[i].textureIndex = 14;
     }
     const x_coordStatic = mapRadius * -1 * horizontalSpacing;
     var hexIndex: u64 = 0;
@@ -366,6 +417,7 @@ pub fn main() void
             hexIndex+=1;
         }
     }
+{
 //     var _000_025: u64 = 0;
 //     var _025_050: u64 = 0;
 //     var _050_075: u64 = 0;
@@ -441,7 +493,7 @@ pub fn main() void
 //     print("25 — 50: {d}\n", .{_025_050});
 //     print("50 — 75: {d}\n", .{_050_075});
 //     print("75 — 100: {d}\n", .{_075_100});
-// //
+}
     // Vertex instance buffer
     var hexsDataVkDeviceAddress: Vulkan.VkDeviceAddress = undefined;
     var hexsDataBuffer: Vulkan.VkBuffer = undefined;
@@ -452,6 +504,11 @@ pub fn main() void
         Vulkan.vkDestroyBuffer(VulkanGlobalState._device, hexsDataBuffer, null);
         Vulkan.vkFreeMemory(VulkanGlobalState._device, hexsDataVkDeviceMemory, null);
     }
+//     var mappedMemory: ?*anyopaque = undefined;
+//     _ = Vulkan.vkMapMemory(VulkanGlobalState._device, hexsDataVkDeviceMemory, 0, 16, 0, &mappedMemory);
+//     print("{*}\n", .{@as(*anyopaque, @ptrFromInt(hexsDataVkDeviceAddress))});
+//     print("{*}\n", .{mappedMemory});
+//     print("value: {d}\n", .{(CustomMem.alignPtrCast([*]u32, mappedMemory))[2]});
     // Square noise map
 {
 //     var noiseBuffer: [mapDimension*mapDimension]u8 = undefined;
@@ -498,7 +555,7 @@ pub fn main() void
 }
     var Hex_Pipeline: Vulkan.VkPipeline = null;
     var Hex_PipelineLayout: Vulkan.VkPipelineLayout = null;
-    Hex.Create_Hex_Pipeline(AoW3_archive.descriptorSetLayout, &Hex_PipelineLayout, &Hex_Pipeline);
+    Hex.Create_Hex_Pipeline(AoW4_archive.descriptorSetLayout, palette_DescriptorSetLayout, &Hex_PipelineLayout, &Hex_Pipeline);
     defer
     {
         Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Hex_Pipeline, null);
@@ -512,57 +569,7 @@ pub fn main() void
 //         Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Square_Pipeline, null);
 //         Vulkan.vkDestroyPipelineLayout(VulkanGlobalState._device, Square_PipelineLayout, null);
 //     }
-{
-// //  AoW4_SGH.import(arenaAllocator, "/home/dima/Документи/Paradox Interactive/Age of Wonders 4/Storage/Save/580d6c33-3bad-4d62-b7a0-134a2a01a12b/Strategic Turn 1");
-//     // Age of Wonders 4
-//
-//     // Figure_Skin
-//         // Penguin_Skin
-//         // Succubus_Skin
-//     // Strategic
-//         // SilvertongueFruit_Strategic
-//         // FireforgeStone_Strategic
-//         // Spawner_Dragons_Strategic
-//         // Spawner_Graveyard_Strategic
-//         // Spawner_Large_Monster_Strategic
-//         // Spawner_Ritual_Strategic
-//         // Spawner_Small_Monster_Strategic
-//         // Terrain_Shared_Void_Strategic
-//         // Terrain_Textures_Strategic
-//         // Terrain
-//             // Foam
-//             // Terrain_Shared_LavaCoasts_Strategic
-//     // Tactical
-//         // Terrain_Textures_Tactical
-//
-//
-// //     var meshes: [*]AoW4_clb.Mesh = undefined;
-// //     var meshesVerticesVkDeviceMemory: Vulkan.VkDeviceMemory = undefined;
-// //     var meshesIndicesVkDeviceMemory: Vulkan.VkDeviceMemory = undefined;
-// //     var meshesCount: u64 = undefined;
-//
-// //     var modelsCount: u64 = undefined;
-// //     var materialsCount: u64 = undefined;
-// // //     print("{d}\n", .{@sizeOf(Vulkan.VkBufferImageCopy)});
-//
-// //  var textures: [*]AoW4_clb.Texture = undefined;
-// //  var texturesVkDeviceMemory: Vulkan.VkDeviceMemory = undefined;
-// //  var texturesCount: u64 = undefined;
-// //  var meshes: [*]AoW4_clb.Mesh = undefined;
-// //  var meshesVerticesVkDeviceMemory: Vulkan.VkDeviceMemory = undefined;
-// //  var meshesIndicesVkDeviceMemory: Vulkan.VkDeviceMemory = undefined;
-// //  var meshesCount: u64 = undefined;
-// //  var modelsCount: u64 = undefined;
-// //  var materialsCount: u64 = undefined;
-// //     AoW4_clb.load(allocator, "Age of Wonders 4/Content/Title/Libraries/Strategic/Terrain_Textures_Strategic.clb", &textures, &texturesVkDeviceMemory, &texturesCount, &meshes, &meshesVerticesVkDeviceMemory, &meshesIndicesVkDeviceMemory, &meshesCount, &modelsCount, &materialsCount);
-// //     defer if(meshesCount > 0)
-// //     {
-// //         for(0..meshesCount) |i|
-// //             meshes[i].unload();
-// //         Vulkan.vkFreeMemory(VulkanGlobalState._device, meshesVerticesVkDeviceMemory, null);
-// //         Vulkan.vkFreeMemory(VulkanGlobalState._device, meshesIndicesVkDeviceMemory, null);
-// //     };
-}
+
     var e: SDL.SDL_Event = undefined;
     var bQuit: bool = false;
     // //     bQuit = true;
@@ -570,6 +577,7 @@ pub fn main() void
     //
     var currentFrame: usize = 0;
     const cameraMove = 1;
+//     var frame: u64 = 0;
 // var swapchainImageIndex: u32 = undefined;
     while (!bQuit)
     {
@@ -782,13 +790,14 @@ pub fn main() void
 
             var hexPushConstants: [2]u64 = .{HexVkVertexBufferAddress, hexsDataVkDeviceAddress};
             Vulkan.vkCmdPushConstants(cmd, Hex_PipelineLayout, Vulkan.VK_SHADER_STAGE_VERTEX_BIT, 0, 16, &hexPushConstants);
-//             Vulkan.vkCmdBindIndexBuffer(VulkanGlobalState._commandBuffers[currentFrame], HexVkIndexBuffer, 0, Vulkan.VK_INDEX_TYPE_UINT16);
-            var descriptorSets: [2]Vulkan.VkDescriptorSet = undefined;
+            var descriptorSets: [3]Vulkan.VkDescriptorSet = undefined;
             descriptorSets[0] = Camera._cameraDescriptorSets[currentFrame];
-            descriptorSets[1] = AoW3_archive.descriptorSet;
+            descriptorSets[1] = AoW4_archive.descriptorSet;
+            descriptorSets[2] = palette_DescriptorSet;
             Vulkan.vkCmdBindDescriptorSets(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Hex_PipelineLayout, 0, descriptorSets.len, &descriptorSets, 0, null);
-            Vulkan.vkCmdDraw(VulkanGlobalState._commandBuffers[currentFrame], 12, hexsCount, 0, 0);
-//             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], 12, mapDimension*mapDimension, 0, 0, 0);
+//             Vulkan.vkCmdDraw(VulkanGlobalState._commandBuffers[currentFrame], 12, hexsCount, 0, 0);
+            Vulkan.vkCmdBindIndexBuffer(VulkanGlobalState._commandBuffers[currentFrame], HexVkIndexBuffer, 0, Vulkan.VK_INDEX_TYPE_UINT16);
+            Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], 12, hexsCount, 0, 0, 0);
 
             Vulkan.vkCmdEndRendering(VulkanGlobalState._commandBuffers[currentFrame]);
             transitionImage(cmd, VulkanGlobalState._swapchainImages[swapchainImageIndex],
@@ -862,8 +871,12 @@ pub fn main() void
             currentFrame+=1;
             if(currentFrame == VulkanGlobalState.FRAME_OVERLAP)
                 currentFrame = 0;
-// //             break;
+//             frame+=1;
+//             if(frame == 1)
+//                 break;
+//             break;
         }
     }
     _ = Vulkan.vkDeviceWaitIdle(VulkanGlobalState._device);
+//     print("value: {d}\n", .{(CustomMem.alignPtrCast([*]u32, mappedMemory))[2]});
 }

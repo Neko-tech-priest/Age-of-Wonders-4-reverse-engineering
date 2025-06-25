@@ -21,23 +21,24 @@ const CustomFS = @import("CustomFS.zig");
 const fd_t = std.posix.fd_t;
 
 const Image = @import("Image.zig");
+const Texture = @import("Texture.zig").Texture;
 const VkImage = @import("VkImage.zig");
 
 const Hex = @import("Hex.zig");
 
 pub const ArchiveGPU = struct
 {
-	pub const Texture = struct
-	{
-		vkImage: Vulkan.VkImage,
-		vkImageView: Vulkan.VkImageView,
-		pub fn unload(self: Texture) void
-		{
-			Vulkan.vkDestroyImage(VulkanGlobalState._device, self.vkImage, null);
-			Vulkan.vkDestroyImageView(VulkanGlobalState._device, self.vkImageView, null);
-		}
-	};
-	textures: [*]Image.Texture,
+//     pub const Texture = struct
+//     {
+//         vkImage: Vulkan.VkImage,
+//         vkImageView: Vulkan.VkImageView,
+//         pub fn unload(self: Texture) void
+//         {
+//             Vulkan.vkDestroyImage(VulkanGlobalState._device, self.vkImage, null);
+//             Vulkan.vkDestroyImageView(VulkanGlobalState._device, self.vkImageView, null);
+//         }
+//     };
+	textures: [*]Texture,
 	texturesCount: u16,
 	texturesVkDeviceMemory: Vulkan.VkDeviceMemory,
 	descriptorSetLayout: Vulkan.VkDescriptorSetLayout,
@@ -71,7 +72,6 @@ pub fn clb_custom_read(allocator: mem.Allocator, path: []const u8, dirfd: fd_t, 
     const fileBuffer: [*]u8 = (GlobalState.arenaAllocator.alloc(u8, fileSize) catch unreachable).ptr;
     _ = CustomFS.read(filefd, fileBuffer, fileSize);
     var fileBufferPtrItr = fileBuffer;
-    print("{s}\n", .{fileBuffer[0..4]});
     if(@as(*u32, @alignCast(@ptrCast(fileBufferPtrItr))).* != @as(u32, @bitCast([4]u8{'C', 'R', 'L', 'C'})))
     {
         print("incorrect clb signature!\n", .{});
@@ -79,7 +79,7 @@ pub fn clb_custom_read(allocator: mem.Allocator, path: []const u8, dirfd: fd_t, 
     }
     archive.texturesCount = fileBufferPtrItr[4];
     fileBufferPtrItr+=5;
-    archive.textures = (allocator.alloc(Image.Texture, archive.texturesCount) catch unreachable).ptr;
+    archive.textures = (allocator.alloc(Texture, archive.texturesCount) catch unreachable).ptr;
     var images: [256]Image.Image = undefined;
     for(images[0..archive.texturesCount]) |*image|
     {
@@ -100,7 +100,7 @@ pub fn clb_custom_read(allocator: mem.Allocator, path: []const u8, dirfd: fd_t, 
     print("\n", .{});
     if(archive.texturesCount > 0)
     {
-        VkImage.createVkImages__VkImageViews__VkDeviceMemory_AoS_dst(&images, @ptrCast(archive.textures), @sizeOf(ArchiveGPU.Texture), archive.texturesCount, &archive.texturesVkDeviceMemory);
+        VkImage.createVkImages__VkImageViews__VkDeviceMemory_AoS_dst(&images, @ptrCast(archive.textures), @sizeOf(Texture), archive.texturesCount, &archive.texturesVkDeviceMemory);
     }
 //     Hex.Create_DiffuseMaterial_VkDescriptorSetLayout(&archive.descriptorSetLayout);
 //     Hex.Create_DiffuseMaterial_VkDescriptorPool(&archive.descriptorPool, @intCast(archive.texturesCount));

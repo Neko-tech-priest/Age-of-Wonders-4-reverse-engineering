@@ -30,7 +30,7 @@ layout( push_constant ) uniform constants
     HexDataBuffer hexDataBuffer;
 }
 pushConstants;
-layout(set = 0, binding = 0) uniform CameraBufferObject
+layout(set = 0, binding = 0) readonly uniform CameraBufferObject
 {
 	mat4 view;
 	mat4 proj;
@@ -41,11 +41,14 @@ layout(location = 1) out flat uint outTextureIndex;
 
 void main()
 {
-    vec3 position = pushConstants.hexVertexBuffer.vertices[hexIndices[gl_VertexIndex]];
-//     vec3 position = pushConstants.hexVertexBuffer.vertices[gl_VertexIndex];
+//     vec3 position = pushConstants.hexVertexBuffer.vertices[hexIndices[gl_VertexIndex]];
+    vec3 position = pushConstants.hexVertexBuffer.vertices[gl_VertexIndex];
     HexData data = pushConstants.hexDataBuffer.data[gl_InstanceIndex];
     position.xy += data.position;
 	gl_Position = ubo.proj * ubo.view * vec4(position, 1.0);
 	outPos = vec2(position.x, position.y)*sqrt(3.0)/6;
     outTextureIndex = data.textureIndex;
+//     pushConstants.hexDataBuffer.data[0].textureIndex+=1;
+//     pushConstants.hexDataBuffer.data[0].textureIndex = atomicAdd(pushConstants.hexDataBuffer.data[0].textureIndex, 1);
+//     outTextureIndex =  5;
 }

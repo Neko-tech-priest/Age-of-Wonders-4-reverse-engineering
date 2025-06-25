@@ -15,7 +15,7 @@ pub var allocator: std.mem.Allocator = undefined;
 // pub const allocator: std.mem.Allocator = std.heap.smp_allocator;
 // pub const pageAllocator = std.heap.page_allocator;
 
-
-pub const stdout = std.io.getStdOut().writer();
+//std.io.getStdOut().writer();
+pub var stdout: std.fs.File.Writer = undefined;
 // pub var bw = std.io.bufferedWriter(stdout_file);
 // pub const stdout = bw.writer();

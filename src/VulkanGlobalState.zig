@@ -43,10 +43,13 @@ pub var _memoryProperties: Vulkan.VkPhysicalDeviceMemoryProperties = undefined;
 // const VK_CHECK_string = "Detected Vulkan error: ";
 pub fn VK_CHECK(err: Vulkan.VkResult) void
 {
-    if (err != 0)
+    if(std.debug.runtime_safety)
     {
-        print("Detected Vulkan error: {d}\n", .{err});
-        // print("{s}{d}\n", .{VK_CHECK_string, err});
-        std.c.exit(-1);
+        if (err != 0)
+        {
+            print("Detected Vulkan error: {d}\n", .{err});
+            // print("{s}{d}\n", .{VK_CHECK_string, err});
+            std.process.exit(0);
+        }
     }
 }

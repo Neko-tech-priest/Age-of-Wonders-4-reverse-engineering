@@ -77,7 +77,7 @@ pub noinline fn matPerspective(angleGrad: f32, aspect: f32, n: f32, f: f32) Mat
 		.{1.0/(@tan(angle/2.0)*aspect), 0.0, 0.0, 0.0},
 		.{0.0, 1.0/(@tan(angle/2.0)), 0.0, 0.0},
 		.{0.0, 0.0, f/(f-n), 1.0},
-		.{0.0, 0.0, -(f*n)/(f-n), 1.0},//0.0
+		.{0.0, 0.0, -(f*n)/(f-n), 0.0},//0.0
 	};
 //     var i: usize = 0;
 //     while(i < 16) : (i+=1)

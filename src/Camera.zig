@@ -153,7 +153,7 @@ pub noinline fn updateCameraBuffer(currentFrame: usize) void
 	camera.view = Math.mulMat(cameraRotate, cameraTranslate);
 //     camera.view = math.mulMat(cameraTranslate, cameraRotate);
 //  camera.view = cameraTranslate;
-	camera.proj = Math.matPerspective(90.0, @as(f32, @floatFromInt(WindowGlobalState._windowExtent.width)) / @as(f32, @floatFromInt(WindowGlobalState._windowExtent.height)), -1.0, 1024.0);//1.0/1024.0
+	camera.proj = Math.matPerspective(90.0, @as(f32, @floatFromInt(WindowGlobalState._windowExtent.width)) / @as(f32, @floatFromInt(WindowGlobalState._windowExtent.height)), 1.0/1024.0, 1024.0);//1.0/1024.0
 //  camera.proj = algebra.mul(camera.proj, cameraScale);
 	CustomMem.memcpyInline(@ptrCast(_cameraBuffersMapped[currentFrame]), @ptrCast(&camera), @sizeOf(CameraBufferObject));
 }

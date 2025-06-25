@@ -125,7 +125,13 @@ pub fn open(path: [*:0]const u8, comptime flags: linux.O) fd_t
                 length+=1;
             length*=2;
             var FileHandle: windows.HANDLE = undefined;
-            const DesiredAccess = windows.STANDARD_RIGHTS_READ | windows.FILE_READ_ATTRIBUTES | windows.FILE_READ_EA | windows.SYNCHRONIZE | windows.FILE_TRAVERSE;
+//             const DesiredAccess = windows.STANDARD_RIGHTS_READ | windows.FILE_READ_ATTRIBUTES | windows.FILE_READ_EA | windows.SYNCHRONIZE | windows.FILE_TRAVERSE;
+            const DesiredAccess = comptime switch((flags.ACCMODE))
+            {
+                posix.ACCMODE.RDONLY => windows.GENERIC_READ,
+                posix.ACCMODE.WRONLY =>windows.GENERIC_WRITE,
+                posix.ACCMODE.RDWR =>windows.GENERIC_READ | windows.GENERIC_WRITE,
+            };
             var ObjectName = windows.UNICODE_STRING
             {
                 .Length = @intCast(length),
@@ -142,12 +148,17 @@ pub fn open(path: [*:0]const u8, comptime flags: linux.O) fd_t
                 .SecurityQualityOfService = null,
             };
             var IoStatusBlock: windows.IO_STATUS_BLOCK = undefined;
-            const ShareAccess = comptime switch((flags.ACCMODE))
-            {
-                posix.ACCMODE.RDONLY => windows.FILE_SHARE_READ,
-                posix.ACCMODE.WRONLY =>windows.FILE_SHARE_WRITE | windows.FILE_SHARE_DELETE,
-                posix.ACCMODE.RDWR =>windows.FILE_SHARE_READ | windows.FILE_SHARE_WRITE | windows.FILE_SHARE_DELETE,
-            };
+//             const ShareAccess = comptime switch((flags.ACCMODE))
+//             {
+//                 posix.ACCMODE.RDONLY => windows.FILE_SHARE_READ,
+//                 posix.ACCMODE.WRONLY =>windows.FILE_SHARE_WRITE | windows.FILE_SHARE_DELETE,
+//                 posix.ACCMODE.RDWR =>windows.FILE_SHARE_READ | windows.FILE_SHARE_WRITE | windows.FILE_SHARE_DELETE,
+//             };
+//             const CreateDisposition: u32 = switch(flags.CREAT)
+//             {
+//                 true => windows.FILE_CREATE,
+//                 false => windows.FILE_OPEN
+//             };
             const CreateOptions: u32 = switch(flags.DIRECTORY)
             {
                 true => windows.FILE_DIRECTORY_FILE | windows.FILE_SYNCHRONOUS_IO_NONALERT | windows.FILE_OPEN_FOR_BACKUP_INTENT,
@@ -160,8 +171,8 @@ pub fn open(path: [*:0]const u8, comptime flags: linux.O) fd_t
                 &IoStatusBlock,
                 null,
                 windows.FILE_ATTRIBUTE_NORMAL,
-                ShareAccess,
-                windows.FILE_OPEN,
+                windows.FILE_SHARE_READ,
+                windows.FILE_OPEN_IF,
                 CreateOptions,
                 null,
                 0,
@@ -218,6 +229,11 @@ pub fn openat(dirfd: fd_t, path: [*:0]const u8, comptime flags: linux.O) fd_t
 //                 posix.ACCMODE.WRONLY =>windows.FILE_SHARE_WRITE | windows.FILE_SHARE_DELETE,
 //                 posix.ACCMODE.RDWR =>windows.FILE_SHARE_READ | windows.FILE_SHARE_WRITE | windows.FILE_SHARE_DELETE,
 //             };
+//             const CreateDisposition: u32 = switch(flags.CREAT)
+//             {
+//                 true => windows.FILE_CREATE,
+//                 false => windows.FILE_OPEN
+//             };
             const CreateOptions: u32 = switch(flags.DIRECTORY)
             {
                 true => windows.FILE_DIRECTORY_FILE | windows.FILE_SYNCHRONOUS_IO_NONALERT | windows.FILE_OPEN_FOR_BACKUP_INTENT,
@@ -231,7 +247,7 @@ pub fn openat(dirfd: fd_t, path: [*:0]const u8, comptime flags: linux.O) fd_t
                 null,
                 windows.FILE_ATTRIBUTE_NORMAL,
                 windows.FILE_SHARE_READ,
-                windows.FILE_OPEN,
+                windows.FILE_OPEN_IF,
                 CreateOptions,
                 null,
                 0,
@@ -252,15 +268,6 @@ pub extern "ntdll" fn NtReadFile(
     Length: windows.ULONG,
     ByteOffset: ?*windows.LARGE_INTEGER,
     Key: ?*windows.ULONG,
-//     ObjectAttributes: *windows.OBJECT_ATTRIBUTES,
-//     IoStatusBlock: *windows.IO_STATUS_BLOCK,
-//     AllocationSize: ?*windows.LARGE_INTEGER,
-//     FileAttributes: windows.ULONG,
-//     ShareAccess: windows.ULONG,
-//     CreateDisposition:windows. ULONG,
-//     CreateOptions: windows.ULONG,
-//     EaBuffer: ?*anyopaque,
-//     EaLength: windows.ULONG,
 ) callconv(.winapi) windows.NTSTATUS;
 pub fn read(fd: fd_t, buf: [*]u8, count: usize) usize_NTSTATUS
 {
@@ -272,7 +279,34 @@ pub fn read(fd: fd_t, buf: [*]u8, count: usize) usize_NTSTATUS
             var IoStatusBlock: windows.IO_STATUS_BLOCK = undefined;
 //             var ByteOffset: windows.LARGE_INTEGER = 0;
             const rc = NtReadFile(fd, null, null, null, &IoStatusBlock, buf, @intCast(count), null, null);
-            print("NtReadFile: {d}\n", .{rc});
+//             print("NtReadFile: {d}\n", .{rc});
+            return rc;
+        },
+        else => @compileError("unsupported target")
+    }
+}
+pub extern "ntdll" fn NtWriteFile(
+    FileHandle: windows.HANDLE,
+    Event: ?*windows.HANDLE,
+    ApcRoutine: ?*windows.IO_APC_ROUTINE,
+    ApcContext: ?*anyopaque,
+    IoStatusBlock: *windows.IO_STATUS_BLOCK,
+    Buffer: *anyopaque,
+    Length: windows.ULONG,
+    ByteOffset: ?*windows.LARGE_INTEGER,
+    Key: ?*windows.ULONG,
+) callconv(.winapi) windows.NTSTATUS;
+pub fn write(fd: fd_t, buf: [*]u8, count: usize) usize_NTSTATUS
+{
+    switch (native_os)
+    {
+        .linux => return linux.write(fd, buf, count),
+        .windows =>
+        {
+            var IoStatusBlock: windows.IO_STATUS_BLOCK = undefined;
+            //             var ByteOffset: windows.LARGE_INTEGER = 0;
+            const rc = NtWriteFile(fd, null, null, null, &IoStatusBlock, buf, @intCast(count), null, null);
+//             print("NtWriteFile: {d}\n", .{rc});
             return rc;
         },
         else => @compileError("unsupported target")

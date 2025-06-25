@@ -15,9 +15,10 @@ const VK_CHECK = VulkanGlobalState.VK_CHECK;
 const VkBuffer = @import("VkBuffer.zig");
 const VkDeviceMemory = @import("VkDeviceMemory.zig");
 
-const Image = @import("Image.zig");
+const Image = @import("Image.zig").Image;
+const Texture = @import("Texture.zig").Texture;
 
-pub fn createVkImage(image: *const Image.Image, usage: Vulkan.VkImageUsageFlags, vkImage: *Vulkan.VkImage) void
+pub fn createVkImage(image: *const Image, usage: Vulkan.VkImageUsageFlags, vkImage: *Vulkan.VkImage) void
 {
 	//print("mipsCount: {d}\n", .{image.mipsCount});
 	const imageInfo = Vulkan.VkImageCreateInfo
@@ -63,7 +64,7 @@ pub fn createVkImageView(mipsCount: u32, image: Vulkan.VkImage, format: Vulkan.V
 
 	VK_CHECK(Vulkan.vkCreateImageView(VulkanGlobalState._device, &viewInfo, null, imageView));
 }
-pub fn createVkImages__VkImageViews__VkDeviceMemory(images: [*]const Image.Image, textures: [*]Image.Texture, numImages: usize, dstDeviceMemory: *Vulkan.VkDeviceMemory) void
+pub fn createVkImages__VkImageViews__VkDeviceMemory(images: [*]const Image, textures: [*]Texture, numImages: usize, dstDeviceMemory: *Vulkan.VkDeviceMemory) void
 {
 	var sizeDeviceMemory: usize = 0;
 	var images_full_sizes: [512]u64 = undefined;
@@ -241,7 +242,7 @@ pub fn createVkImages__VkImageViews__VkDeviceMemory(images: [*]const Image.Image
 	VK_CHECK(Vulkan.vkQueueSubmit(VulkanGlobalState._graphicsQueue, 1, &submitInfo, null));
 	_ = Vulkan.vkQueueWaitIdle(VulkanGlobalState._graphicsQueue);
 }
-pub fn createVkImages__VkImageViews__VkDeviceMemory_AoS_dst(images: [*]Image.Image, descriptors: [*]u8, descriptorsStructSize: u32, numImages: usize, dstDeviceMemory: *Vulkan.VkDeviceMemory) void
+pub fn createVkImages__VkImageViews__VkDeviceMemory_AoS_dst(images: [*]Image, descriptors: [*]u8, descriptorsStructSize: u32, numImages: usize, dstDeviceMemory: *Vulkan.VkDeviceMemory) void
 {
 	var sizeDeviceMemory: usize = 0;
 	var images_full_sizes: [512]u64 = undefined;

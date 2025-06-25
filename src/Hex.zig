@@ -9,11 +9,12 @@ const VulkanGlobalState = @import("VulkanGlobalState.zig");
 const VK_CHECK = VulkanGlobalState.VK_CHECK;
 const VkPipeline = @import("VkPipeline.zig");
 const Image = @import("Image.zig");
+const Texture = @import("Texture.zig").Texture;
 
 const Camera = @import("Camera.zig");
 
 // const clb_custom = @import("clb_custom.zig");
-const AoW4_clb_custom = @import("AoW4_clb_custom.zig");
+// const AoW4_clb_custom = @import("AoW4_clb_custom.zig");
 
 pub const HexData = struct
 {
@@ -79,7 +80,7 @@ pub fn Create_DiffuseMaterial_VkDescriptorPool(texturesCount: u32, descriptorPoo
 	//
 	VK_CHECK(Vulkan.vkCreateDescriptorPool(VulkanGlobalState._device, &poolInfo, null, descriptorPool));
 }
-pub fn Create_DiffuseMaterial_VkDescriptorSet(texturesCount: u32, textures: [*]Image.Texture, descriptorSetLayout: Vulkan.VkDescriptorSetLayout, descriptorPool: Vulkan.VkDescriptorPool, descriptorSet: *Vulkan.VkDescriptorSet) void
+pub fn Create_DiffuseMaterial_VkDescriptorSet(texturesCount: u32, textures: [*]Texture, descriptorSetLayout: Vulkan.VkDescriptorSetLayout, descriptorPool: Vulkan.VkDescriptorPool, descriptorSet: *Vulkan.VkDescriptorSet) void
 {
 	const allocInfo = Vulkan.VkDescriptorSetAllocateInfo
 	{
@@ -123,124 +124,117 @@ pub fn Create_DiffuseMaterial_VkDescriptorSet(texturesCount: u32, textures: [*]I
 
 	Vulkan.vkUpdateDescriptorSets(VulkanGlobalState._device, descriptorWrites.len, &descriptorWrites, 0, null);
 }
-// pub var _paletteSampler: Vulkan.VkSampler = undefined;
-// pub fn createHexPaletteSampler() void
-// {
-//     const samplerInfo = Vulkan.VkSamplerCreateInfo
-//     {
-//         .sType = Vulkan.VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-//         // VK_FILTER_NEAREST
-//         // VK_FILTER_LINEAR
-//         .magFilter = Vulkan.VK_FILTER_LINEAR,
-//         .minFilter = Vulkan.VK_FILTER_LINEAR,
-//         // VK_SAMPLER_MIPMAP_MODE_NEAREST
-//         // VK_SAMPLER_MIPMAP_MODE_LINEAR
-//         .mipmapMode = Vulkan.VK_SAMPLER_MIPMAP_MODE_LINEAR,
-//         .addressModeU = Vulkan.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-//         .addressModeV = Vulkan.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-//         .addressModeW = Vulkan.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-// //       .mipLodBias
-// //       .anisotropyEnable = Vulkan.VK_TRUE,
-// //       .maxAnisotropy = VulkanGlobalState._deviceProperties.limits.maxSamplerAnisotropy,
-//         .compareEnable = Vulkan.VK_FALSE,
-//         .compareOp = Vulkan.VK_COMPARE_OP_NEVER,//VK_COMPARE_OP_ALWAYS
-// //       .minLod = 0.0,
-// //       .maxLod = Vulkan.VK_LOD_CLAMP_NONE,
-// //       .borderColor = Vulkan.VK_BORDER_COLOR_INT_OPAQUE_BLACK,
-// //       .unnormalizedCoordinates = Vulkan.VK_FALSE,
-//
-//     };
-//     VK_CHECK(Vulkan.vkCreateSampler(VulkanGlobalState._device, &samplerInfo, null, &_paletteSampler));
-// }
-pub fn Create_HexsData_VkDescriptorSetLayout(descriptorSetLayout: *Vulkan.VkDescriptorSetLayout) void
+pub var _paletteSampler: Vulkan.VkSampler = undefined;
+pub fn createHexPaletteSampler() void
 {
-	const descriptorSetLayoutBindings = [1]Vulkan.VkDescriptorSetLayoutBinding
-	{
-		.{
-			.binding = 0,
-			.descriptorCount = 1,
-			.descriptorType = Vulkan.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-			.pImmutableSamplers = null,
-			.stageFlags = Vulkan.VK_SHADER_STAGE_FRAGMENT_BIT,
-		},
-	};
-	const layoutInfo = Vulkan.VkDescriptorSetLayoutCreateInfo
-	{
-		.sType = Vulkan.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-		.bindingCount = descriptorSetLayoutBindings.len,
-		.pBindings = &descriptorSetLayoutBindings,
-	};
-	VK_CHECK(Vulkan.vkCreateDescriptorSetLayout(VulkanGlobalState._device, &layoutInfo, null, descriptorSetLayout));
+    const samplerInfo = Vulkan.VkSamplerCreateInfo
+    {
+        .sType = Vulkan.VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        // VK_FILTER_NEAREST
+        // VK_FILTER_LINEAR
+        .magFilter = Vulkan.VK_FILTER_LINEAR,
+        .minFilter = Vulkan.VK_FILTER_LINEAR,
+        // VK_SAMPLER_MIPMAP_MODE_NEAREST
+        // VK_SAMPLER_MIPMAP_MODE_LINEAR
+        .mipmapMode = Vulkan.VK_SAMPLER_MIPMAP_MODE_LINEAR,
+        .addressModeU = Vulkan.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        .addressModeV = Vulkan.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        .addressModeW = Vulkan.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+//       .mipLodBias
+//       .anisotropyEnable = Vulkan.VK_TRUE,
+//       .maxAnisotropy = VulkanGlobalState._deviceProperties.limits.maxSamplerAnisotropy,
+        .compareEnable = Vulkan.VK_FALSE,
+        .compareOp = Vulkan.VK_COMPARE_OP_NEVER,//VK_COMPARE_OP_ALWAYS
+//       .minLod = 0.0,
+//       .maxLod = Vulkan.VK_LOD_CLAMP_NONE,
+//       .borderColor = Vulkan.VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+//       .unnormalizedCoordinates = Vulkan.VK_TRUE,
+
+    };
+    VK_CHECK(Vulkan.vkCreateSampler(VulkanGlobalState._device, &samplerInfo, null, &_paletteSampler));
 }
-pub fn Create_HexsData_VkDescriptorPool(descriptorPool: *Vulkan.VkDescriptorPool) void
+pub fn createPaletteDescriptorsData(imageView: Vulkan.VkImageView, descriptorSetLayout: *Vulkan.VkDescriptorSetLayout, descriptorPool: *Vulkan.VkDescriptorPool, descriptorSet: *Vulkan.VkDescriptorSet) void
 {
-	const poolSizes = [1]Vulkan.VkDescriptorPoolSize
-	{
-		.{
-			.type = Vulkan.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-			.descriptorCount = 1,
-		},
-	};
+//     _ = imageView;
+    const descriptorSetLayoutBindings = [1]Vulkan.VkDescriptorSetLayoutBinding
+    {
+        .{
+            .binding = 0,
+            .descriptorCount = 1,
+            .descriptorType = Vulkan.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImmutableSamplers = null,
+            .stageFlags = Vulkan.VK_SHADER_STAGE_FRAGMENT_BIT,
+        },
+    };
+    const layoutInfo = Vulkan.VkDescriptorSetLayoutCreateInfo
+    {
+        .sType = Vulkan.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .bindingCount = descriptorSetLayoutBindings.len,
+        .pBindings = &descriptorSetLayoutBindings,
+    };
+    VK_CHECK(Vulkan.vkCreateDescriptorSetLayout(VulkanGlobalState._device, &layoutInfo, null, descriptorSetLayout));
 
-	const poolInfo = Vulkan.VkDescriptorPoolCreateInfo
-	{
-		.sType = Vulkan.VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-		.poolSizeCount = poolSizes.len,
-		.pPoolSizes = &poolSizes,
-		.maxSets = 1,
-	};
-	//
-	VK_CHECK(Vulkan.vkCreateDescriptorPool(VulkanGlobalState._device, &poolInfo, null, descriptorPool));
+    const poolSizes = [1]Vulkan.VkDescriptorPoolSize
+    {
+        .{
+            .type = Vulkan.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount = 1,
+        },
+    };
+    const poolInfo = Vulkan.VkDescriptorPoolCreateInfo
+    {
+        .sType = Vulkan.VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+        .poolSizeCount = poolSizes.len,
+        .pPoolSizes = &poolSizes,
+        .maxSets = 1,
+    };
+    VK_CHECK(Vulkan.vkCreateDescriptorPool(VulkanGlobalState._device, &poolInfo, null, descriptorPool));
+
+    const allocInfo = Vulkan.VkDescriptorSetAllocateInfo
+    {
+        .sType = Vulkan.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+        .descriptorPool = descriptorPool.*,
+        .descriptorSetCount = 1,
+        .pSetLayouts = descriptorSetLayout,
+    };
+
+    VK_CHECK(Vulkan.vkAllocateDescriptorSets(VulkanGlobalState._device, &allocInfo, descriptorSet));
+
+    const imageInfo = Vulkan.VkDescriptorImageInfo
+    {
+        .sampler = _paletteSampler,
+        .imageView = imageView,
+        .imageLayout = Vulkan.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+    };
+    // const bufferInfo = Vulkan.VkDescriptorBufferInfo
+    // {
+    //  .buffer = buffer,
+    //  .offset = 0,
+    //  .range = Vulkan.VK_WHOLE_SIZE,
+    // };
+    // for(0..descriptorsCount) |i|
+    // {
+    // bufferInfo[i].buffer = buffer;
+    //  bufferInfo[i].offset = i*8;
+    //  bufferInfo[i].range = 8;
+    // }
+    const descriptorWrites = [1]Vulkan.VkWriteDescriptorSet
+    {
+        .{
+            .sType = Vulkan.VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = descriptorSet.*,
+            .dstBinding = 0,
+            .dstArrayElement = 0,
+            .descriptorType = Vulkan.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount = 1,
+            .pImageInfo = &imageInfo,
+            // .pBufferInfo = &bufferInfo,
+        },
+    };
+
+    Vulkan.vkUpdateDescriptorSets(VulkanGlobalState._device, descriptorWrites.len, &descriptorWrites, 0, null);
 }
-pub fn Create_HexsData_VkDescriptorSet(imageView: Vulkan.VkImageView, descriptorSetLayout: Vulkan.VkDescriptorSetLayout, descriptorPool: Vulkan.VkDescriptorPool, descriptorSet: *Vulkan.VkDescriptorSet) void
-{
-	const allocInfo = Vulkan.VkDescriptorSetAllocateInfo
-	{
-		.sType = Vulkan.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-		.descriptorPool = descriptorPool,
-		.descriptorSetCount = 1,
-		.pSetLayouts = &descriptorSetLayout,
-	};
-
-	VK_CHECK(Vulkan.vkAllocateDescriptorSets(VulkanGlobalState._device, &allocInfo, descriptorSet));
-
-//  print("size: {d}\n", .{@sizeOf(Vulkan.VkDescriptorBufferInfo)});
-//  var bufferInfo: [100*100]Vulkan.VkDescriptorBufferInfo = undefined;
-	const imageInfo = Vulkan.VkDescriptorImageInfo
-	{
-//      .sampler = _paletteSampler,
-		.imageView = imageView,
-		.imageLayout = Vulkan.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-	};
-// const bufferInfo = Vulkan.VkDescriptorBufferInfo
-// {
-//  .buffer = buffer,
-//  .offset = 0,
-//  .range = Vulkan.VK_WHOLE_SIZE,
-// };
-// for(0..descriptorsCount) |i|
-// {
-// bufferInfo[i].buffer = buffer;
-//  bufferInfo[i].offset = i*8;
-//  bufferInfo[i].range = 8;
-// }
-	const descriptorWrites = [1]Vulkan.VkWriteDescriptorSet
-	{
-		.{
-			.sType = Vulkan.VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-			.dstSet = descriptorSet.*,
-			.dstBinding = 0,
-			.dstArrayElement = 0,
-			.descriptorType = Vulkan.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-			.descriptorCount = 1,
-			.pImageInfo = &imageInfo,
-			// .pBufferInfo = &bufferInfo,
-		},
-	};
-
-	Vulkan.vkUpdateDescriptorSets(VulkanGlobalState._device, descriptorWrites.len, &descriptorWrites, 0, null);
-}
-pub fn Create_Hex_Pipeline(texturesDescriptorSetLayout: Vulkan.VkDescriptorSetLayout, pipelineLayout: *Vulkan.VkPipelineLayout, pipeline: *Vulkan.VkPipeline) void
+pub fn Create_Hex_Pipeline(texturesDescriptorSetLayout: Vulkan.VkDescriptorSetLayout, paletteDescriptorSetLayout: Vulkan.VkDescriptorSetLayout, pipelineLayout: *Vulkan.VkPipelineLayout, pipeline: *Vulkan.VkPipeline) void
 {
 	const vertShaderModule: Vulkan.VkShaderModule = VkPipeline.createShaderModule("shaders/Hex.vert.spv");
 	const fragShaderModule: Vulkan.VkShaderModule = VkPipeline.createShaderModule("shaders/Hex.frag.spv");
@@ -262,40 +256,6 @@ pub fn Create_Hex_Pipeline(texturesDescriptorSetLayout: Vulkan.VkDescriptorSetLa
 			.pName = "main",
 		}
 	};
-//     const bindingDescriptions = [_]Vulkan.VkVertexInputBindingDescription
-//     {
-//     //         .{
-//     //             .binding = 0,
-//     //             .stride = 12,
-//     //             .inputRate = Vulkan.VK_VERTEX_INPUT_RATE_VERTEX,
-//     //         },
-//         .{
-//             .binding = 1,
-//             .stride = @sizeOf(HexData),
-//             .inputRate = Vulkan.VK_VERTEX_INPUT_RATE_INSTANCE,
-//         }
-//     };
-//     const attributeDescriptions = [_]Vulkan.VkVertexInputAttributeDescription
-//     {
-//     //         .{
-//     //             .binding = 0,
-//     //             .location = 0,
-//     //             .format = Vulkan.VK_FORMAT_R32G32B32_SFLOAT,
-//     //             .offset = 0,
-//     //         },
-//         .{
-//             .binding = 1,
-//             .location = 1,
-//             .format = Vulkan.VK_FORMAT_R32G32_SFLOAT,
-//             .offset = 0,
-//         },
-//         .{
-//             .binding = 1,
-//             .location = 2,
-//             .format = Vulkan.VK_FORMAT_R8G8B8A8_UINT,
-//             .offset = 8,
-//         },
-//     };
 //
     const VertexInputState = Vulkan.VkPipelineVertexInputStateCreateInfo
     {
@@ -396,11 +356,11 @@ pub fn Create_Hex_Pipeline(texturesDescriptorSetLayout: Vulkan.VkDescriptorSetLa
 		.dynamicStateCount = dynamicStates.len,
 		.pDynamicStates = &dynamicStates,
 	};
-	const descriptorSetLayouts = [2]Vulkan.VkDescriptorSetLayout
+	const descriptorSetLayouts = [3]Vulkan.VkDescriptorSetLayout
 	{
 		Camera._cameraDescriptorSetLayout,
 		texturesDescriptorSetLayout,
-		// hexesDataDescriptorSetLayout,
+		paletteDescriptorSetLayout,
 	};
     const pushConstantRange  = Vulkan.VkPushConstantRange
     {

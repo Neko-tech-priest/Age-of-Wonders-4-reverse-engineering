@@ -396,8 +396,8 @@ pub fn createTextureSampler() void
 		.sType = Vulkan.VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
 		// VK_FILTER_NEAREST
 		// VK_FILTER_LINEAR
-		.magFilter = Vulkan.VK_FILTER_NEAREST,
-		.minFilter = Vulkan.VK_FILTER_NEAREST,
+		.magFilter = Vulkan.VK_FILTER_LINEAR,
+		.minFilter = Vulkan.VK_FILTER_LINEAR,
 		// VK_SAMPLER_MIPMAP_MODE_NEAREST
 		// VK_SAMPLER_MIPMAP_MODE_LINEAR
         .mipmapMode = Vulkan.VK_SAMPLER_MIPMAP_MODE_LINEAR,
