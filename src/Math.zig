@@ -16,17 +16,27 @@ pub const Vec = F32x4;
 pub const Mat = [4]F32x4;
 pub const Quat = F32x4;
 
-pub noinline fn matTranslation(x: f32, y: f32, z: f32) Mat
+// pub fn matTranslation(x: f32, y: f32, z: f32) Mat
+// {
+//     return
+//     .{
+//         .{1.0, 0.0, 0.0, 0.0},
+//         .{0.0, 1.0, 0.0, 0.0},
+//         .{0.0, 0.0, 1.0, 0.0},
+//         .{x, y, z, 1.0},
+//     };
+// }
+pub fn matTranslation(x: f32, y: f32, z: f32) Mat
 {
-	return
-	.{
-		.{1.0, 0.0, 0.0, 0.0},
-		.{0.0, 1.0, 0.0, 0.0},
-		.{0.0, 0.0, 1.0, 0.0},
-		.{x, y, z, 1.0},
-	};
+    return
+    .{
+        .{1.0, 0.0, 0.0, x},
+        .{0.0, 1.0, 0.0, y},
+        .{0.0, 0.0, 1.0, z},
+        .{0.0, 0.0, 0.0, 1.0},
+    };
 }
-pub noinline fn matScaling(x: f32, y: f32, z: f32) Mat
+pub fn matScaling(x: f32, y: f32, z: f32) Mat
 {
 	return
 	.{
@@ -36,58 +46,76 @@ pub noinline fn matScaling(x: f32, y: f32, z: f32) Mat
 		.{0.0, 0.0, 0.0, 1.0},
 	};
 }
-pub noinline fn matRotationX(angleGrad: f32) Mat
+pub fn matRotationX(angleGrad: f32) Mat
 {
 	const angle = angleGrad*pi/180.0;
 	return
 	.{
 		.{1.0, 0.0, 0.0, 0.0},
-		.{0.0, @cos(angle), @sin(angle), 0.0},
-		.{0.0, -@sin(angle), @cos(angle), 0.0},
+		.{0.0, @cos(angle), -@sin(angle), 0.0},
+		.{0.0, @sin(angle), @cos(angle), 0.0},
 		.{0.0, 0.0, 0.0, 1.0},
 	};
 }
-pub noinline fn matRotationY(angleGrad: f32) Mat
+pub fn matRotationY(angleGrad: f32) Mat
 {
 	const angle = angleGrad*pi/180.0;
 	return
 	.{
-		.{@cos(angle), 0.0, -@sin(angle), 0.0},
+		.{@cos(angle), 0.0, @sin(angle), 0.0},
 		.{0.0, 1.0, 0.0, 0.0},
-		.{@sin(angle), 0.0, @cos(angle), 0.0},
+		.{-@sin(angle), 0.0, @cos(angle), 0.0},
 		.{0.0, 0.0, 0.0, 1.0},
 	};
 }
-pub noinline fn matRotationZ(angleGrad: f32) Mat
+pub fn matRotationZ(angleGrad: f32) Mat
 {
 	const angle = angleGrad*pi/180.0;
 	return
 	.{
-		.{@cos(angle), @sin(angle), 0.0, 0.0},
-		.{-@sin(angle), @cos(angle), 0.0, 0.0},
+		.{@cos(angle), -@sin(angle), 0.0, 0.0},
+		.{@sin(angle), @cos(angle), 0.0, 0.0},
 		.{0.0, 0.0, 1.0, 0.0},
 		.{0.0, 0.0, 0.0, 1.0},
 	};
 }
-pub noinline fn matPerspective(angleGrad: f32, aspect: f32, n: f32, f: f32) Mat
+// pub fn matPerspective(angleGrad: f32, aspect: f32, n: f32, f: f32) Mat
+// {
+//     const angle = angleGrad*pi/180.0;
+//     const e = 1.0/(@tan(angle/2.0));
+//     return
+//     .{
+//         .{e/aspect, 0.0, 0.0, 0.0},
+//         .{0.0, e, 0.0, 0.0},
+//         .{0.0, 0.0, f/(f-n), 1.0},
+//         .{0.0, 0.0, (n*f)/(n-f), 0.0},//0.0
+//     };
+// }
+pub fn matPerspective(angleGrad: f32, aspect: f32, n: f32, f: f32) Mat
 {
-	const angle = angleGrad*pi/180.0;
-	return
-	.{
-		.{1.0/(@tan(angle/2.0)*aspect), 0.0, 0.0, 0.0},
-		.{0.0, 1.0/(@tan(angle/2.0)), 0.0, 0.0},
-		.{0.0, 0.0, f/(f-n), 1.0},
-		.{0.0, 0.0, -(f*n)/(f-n), 0.0},//0.0
-	};
-//     var i: usize = 0;
-//     while(i < 16) : (i+=1)
-//         self.*.data[i] = 0;
-//     self.*.data[ 0] = 1.0/(@tan(angle/2.0)*aspect);//*aspect
-//     self.*.data[ 5] = 1.0/(@tan(angle/2.0));
-//     self.*.data[10] = f/(f-n);self.*.data[11] = 1;
-//     self.*.data[14] = -(f*n)/(f-n);// f / (-f/n + 1)
+    const angle = angleGrad*pi/180.0;
+    const e = 1.0/(@tan(angle/2.0));
+    return
+    .{
+        .{e/aspect, 0.0, 0.0, 0.0},
+        .{0.0, e, 0.0, 0.0},
+        .{0.0, 0.0, f/(f-n), (n*f)/(n-f)},
+        .{0.0, 0.0, 1, 0.0},//0.0
+    };
 }
-pub noinline fn transpose(m: Mat) Mat
+pub fn matPerspectiveReversed(angleGrad: f32, aspect: f32, n: f32, f: f32) Mat
+{
+    const angle = angleGrad*pi/180.0;
+    const e = 1.0/(@tan(angle/2.0));
+    return
+    .{
+        .{e/aspect, 0.0, 0.0, 0.0},
+        .{0.0, e, 0.0, 0.0},
+        .{0.0, 0.0, n/(f-n), -1.0},
+        .{0.0, 0.0, (n*f)/(f-n), 0.0},//0.0
+    };
+}
+pub fn transpose(m: Mat) Mat
 {
 	const temp1 = @shuffle(f32, m[0], m[1], [4]i32{ 0, 1, ~@as(i32, 0), ~@as(i32, 1) });
 	const temp3 = @shuffle(f32, m[0], m[1], [4]i32{ 2, 3, ~@as(i32, 2), ~@as(i32, 3) });

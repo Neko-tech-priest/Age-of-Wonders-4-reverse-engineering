@@ -21,11 +21,12 @@ pub const HexData = struct
 	x: f32,
 	y: f32,
     textureIndex: u32,
-    alignment: u32,
+//     alignment: u32,
 };
 pub const Vertex = struct
 {
-	position: [3]f32 align(16),
+//     position: [3]f32 align(16),
+	position: [3]f32
 };
 
 
@@ -153,6 +154,12 @@ pub fn createHexPaletteSampler() void
     };
     VK_CHECK(Vulkan.vkCreateSampler(VulkanGlobalState._device, &samplerInfo, null, &_paletteSampler));
 }
+pub var palette_DescriptorSetLayout: Vulkan.VkDescriptorSetLayout = undefined;
+pub var palette_DescriptorPool: Vulkan.VkDescriptorPool = undefined;
+pub var palette_DescriptorSet: Vulkan.VkDescriptorSet = undefined;
+
+pub var Hex_Pipeline: Vulkan.VkPipeline = null;
+pub var Hex_PipelineLayout: Vulkan.VkPipelineLayout = null;
 pub fn createPaletteDescriptorsData(imageView: Vulkan.VkImageView, descriptorSetLayout: *Vulkan.VkDescriptorSetLayout, descriptorPool: *Vulkan.VkDescriptorPool, descriptorSet: *Vulkan.VkDescriptorSet) void
 {
 //     _ = imageView;
@@ -322,9 +329,9 @@ pub fn Create_Hex_Pipeline(texturesDescriptorSetLayout: Vulkan.VkDescriptorSetLa
 		.depthTestEnable = Vulkan.VK_TRUE,
 		.depthWriteEnable = Vulkan.VK_TRUE,
 		.depthCompareOp = Vulkan.VK_COMPARE_OP_LESS,//VK_COMPARE_OP_GREATER
-		.depthBoundsTestEnable = Vulkan.VK_FALSE,
-		.minDepthBounds = 0.0, // Optional
-		.maxDepthBounds = 1.0, // Optional
+//         .depthBoundsTestEnable = Vulkan.VK_TRUE,
+//         .minDepthBounds = 0.0, // Optional
+//         .maxDepthBounds = 1.0, // Optional
 		.stencilTestEnable = Vulkan.VK_FALSE,
 	};
 	//setup dummy color blending. We arent using transparent objects yet

@@ -28,7 +28,7 @@ pub var _swapchainImageViews: [4]Vulkan.VkImageView = undefined;
 pub var _swapchainImageFormat: c_uint = Vulkan.VK_FORMAT_B8G8R8A8_SRGB;
 pub var _swapchainImagesCount: u32 = 3;
 
-pub const _depthFormat: Vulkan.VkFormat = Vulkan.VK_FORMAT_D16_UNORM;
+pub const _depthFormat: Vulkan.VkFormat = Vulkan.VK_FORMAT_D32_SFLOAT;
 pub var _depthImage: Vulkan.VkImage = undefined;
 pub var _depthImageView: Vulkan.VkImageView = undefined;
 pub var _depthDeviceMemory: Vulkan.VkDeviceMemory = undefined;

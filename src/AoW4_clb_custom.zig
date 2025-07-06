@@ -30,6 +30,9 @@ const VkDeviceMemory = @import("VkDeviceMemory.zig");
 const VulkanGlobalState = @import("VulkanGlobalState.zig");
 const VK_CHECK = VulkanGlobalState.VK_CHECK;
 
+const Hex = @import("Hex.zig");
+
+const main = @import("main.zig");
 // pub const ArchiveCPU = struct
 // {
 //     pub const Mesh = struct
@@ -70,6 +73,11 @@ const VK_CHECK = VulkanGlobalState.VK_CHECK;
 // };
 pub const ArchiveGPU = struct
 {
+    const Mesh = struct
+    {
+        indexVkBufferOffset: u32,
+        vertexVkBufferOffset: u32,
+    };
 //     pub const Meshes_AoS = struct
 //     {
 //         vkBuffers: [*]Vulkan.VkBuffer,
@@ -89,11 +97,13 @@ pub const ArchiveGPU = struct
 //         }
 //     };
     textures: [*]Texture,
-//     meshes_AoS: Meshes_AoS,
+    meshes: [*]Mesh,
     texturesCount: u16,
-//     meshesCount: u16,
+    meshesCount: u16,
     texturesVkDeviceMemory: Vulkan.VkDeviceMemory,
-//     meshesVkDeviceMemory: Vulkan.VkDeviceMemory,
+    meshesVkBuffer: Vulkan.VkBuffer,
+    meshesVkDeviceMemory: Vulkan.VkDeviceMemory,
+    meshesVkDeviceAddress: Vulkan.VkDeviceAddress,
     descriptorSetLayout: Vulkan.VkDescriptorSetLayout,
     descriptorPool: Vulkan.VkDescriptorPool,
     descriptorSet: Vulkan.VkDescriptorSet,
@@ -102,11 +112,15 @@ pub const ArchiveGPU = struct
         for(0..self.texturesCount) |i|
             self.textures[i].unload();
         Vulkan.vkFreeMemory(VulkanGlobalState._device, self.texturesVkDeviceMemory, null);
+
+        Vulkan.vkDestroyBuffer(VulkanGlobalState._device, self.meshesVkBuffer, null);
+        Vulkan.vkFreeMemory(VulkanGlobalState._device, self.meshesVkDeviceMemory, null);
 // //         for(0..self.meshesCount)
 //         self.meshes_AoS.unload(self.meshesCount);
 //         Vulkan.vkFreeMemory(VulkanGlobalState._device, self.meshesVkDeviceMemory, null);
 //
         GlobalState.allocator.free(self.textures[0..self.texturesCount]);
+        GlobalState.allocator.free(self.meshes[0..self.meshesCount]);
 //         GlobalState.allocator.free(CustomMem.ptrCast([*]align(8)u8, self.meshes_AoS.vkBuffers)[0..self.meshesCount*16+self.meshesCount*2]);
         Vulkan.vkDestroyDescriptorSetLayout(VulkanGlobalState._device, self.descriptorSetLayout, null);
         Vulkan.vkDestroyDescriptorPool(VulkanGlobalState._device, self.descriptorPool, null);
@@ -121,6 +135,11 @@ const Image = struct
     mipsCount: u8,
     alignment: u8,
     format: Vulkan.VkFormat,
+};
+const MeshData = struct
+{
+    indicesBufferSize: u32,
+    verticesBufferSize: u32,
 };
 pub fn createVkImage(image: *const Image, usage: Vulkan.VkImageUsageFlags, vkImage: *Vulkan.VkImage) void
 {
@@ -146,18 +165,30 @@ pub fn createVkImage(image: *const Image, usage: Vulkan.VkImageUsageFlags, vkIma
     };
     VK_CHECK(Vulkan.vkCreateImage(VulkanGlobalState._device, &imageInfo, null, vkImage));
 }
-fn loadTextures(buffer: [*]const u8, images: [*]const Image, textures: [*]Texture, numImages: u64, dstDeviceMemory: *Vulkan.VkDeviceMemory) void
+fn loadTextures(buffer: [*]const u8, images: [*] Image, textures: [*]Texture, numImages: u64, dstDeviceMemory: *Vulkan.VkDeviceMemory) void
 {
     var sizeDeviceMemory: usize = 0;
-    var images_full_sizes: [512]u64 = undefined;
+//     var images_full_sizes: [512]u64 = undefined;
+    var imageBindingOffset: [512]u64 = undefined;
     for(0..numImages) |imageIndex|
     {
         const image = &images[imageIndex];
+//         image.mipsCount = 1;
+//         image.size = image.mipSize;
         createVkImage(image, Vulkan.VK_IMAGE_USAGE_TRANSFER_DST_BIT | Vulkan.VK_IMAGE_USAGE_SAMPLED_BIT, &textures[imageIndex].vkImage);
         var memRequirements: Vulkan.VkMemoryRequirements = undefined;
         Vulkan.vkGetImageMemoryRequirements(VulkanGlobalState._device, textures[imageIndex].vkImage, &memRequirements);
-        images_full_sizes[imageIndex] = (memRequirements.size + ((memRequirements.alignment - memRequirements.size % memRequirements.alignment) % memRequirements.alignment));
-        sizeDeviceMemory += images_full_sizes[imageIndex];
+//         const alignment = 65536;
+//         sizeDeviceMemory = sizeDeviceMemory + ((alignment - sizeDeviceMemory % alignment) % alignment);
+//         imageBindingOffset[imageIndex] = sizeDeviceMemory;
+//         sizeDeviceMemory += memRequirements.size;
+//         print("imageBindingOffset: {d}\n", .{imageBindingOffset[imageIndex]});
+//         print("sizeDeviceMemory: {d}\n", .{sizeDeviceMemory});
+        imageBindingOffset[imageIndex] = sizeDeviceMemory + ((memRequirements.alignment - sizeDeviceMemory % memRequirements.alignment) % memRequirements.alignment);
+        sizeDeviceMemory = imageBindingOffset[imageIndex] + memRequirements.size;
+//         print("imageSize: {d}\n", .{image.size});
+//         print("imageFullSize: {d}\n", .{imageFullSize});
+//         print("alignment: {d}\n", .{memRequirements.alignment});
     }
     var stagingBuffer: Vulkan.VkBuffer = undefined;
     var stagingDeviceMemory: Vulkan.VkDeviceMemory = undefined;
@@ -190,17 +221,18 @@ fn loadTextures(buffer: [*]const u8, images: [*]const Image, textures: [*]Textur
         _ = Vulkan.vkMapMemory(VulkanGlobalState._device, stagingDeviceMemory, 0, sizeDeviceMemory, 0, &data);
         for(0..numImages) |imageIndex|
         {
+//             print("textuireIndex: {d}\n", .{imageIndex});
             const image = &images[imageIndex];
+            deviceOffset = imageBindingOffset[imageIndex];
             VK_CHECK(Vulkan.vkBindImageMemory(VulkanGlobalState._device, textures[imageIndex].vkImage, dstDeviceMemory.*, deviceOffset));
+//             exit(0);
             VkImage.createVkImageView(image.mipsCount, textures[imageIndex].vkImage, image.format, Vulkan.VK_IMAGE_ASPECT_COLOR_BIT, &textures[imageIndex].vkImageView);
             memcpyDstAlign((@as([*]u8, @ptrCast(data))+deviceOffset), buffer+bufferOffset, image.size);
             bufferOffset+=image.size;
-            deviceOffset += images_full_sizes[imageIndex];
         }
     }
 //     memcpyDstAlign(@ptrCast(data), buffer, sizeDeviceMemory);
     Vulkan.vkUnmapMemory(VulkanGlobalState._device, stagingDeviceMemory);
-
     const cmdBeginInfo = Vulkan.VkCommandBufferBeginInfo
     {
         .sType = Vulkan.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -232,7 +264,6 @@ fn loadTextures(buffer: [*]const u8, images: [*]const Image, textures: [*]Textur
             .layerCount = 1,
         },
     };
-
     barrier.srcAccessMask = 0;
     barrier.dstAccessMask = Vulkan.VK_ACCESS_TRANSFER_WRITE_BIT;
     _ = Vulkan.vkBeginCommandBuffer(VulkanGlobalState._commandBuffers[0], &cmdBeginInfo);
@@ -249,56 +280,52 @@ fn loadTextures(buffer: [*]const u8, images: [*]const Image, textures: [*]Textur
             1, &barrier
         );
     }
-
     VK_CHECK(Vulkan.vkEndCommandBuffer(VulkanGlobalState._commandBuffers[0]));
     VK_CHECK(Vulkan.vkQueueSubmit(VulkanGlobalState._graphicsQueue, 1, &submitInfo, null));
     _ = Vulkan.vkQueueWaitIdle(VulkanGlobalState._graphicsQueue);
 
-    // копіювання
-    var region = Vulkan.VkBufferImageCopy
-    {
-        //.bufferOffset = 0,
-        .bufferRowLength = 0,
-        .bufferImageHeight = 0,
-
-        .imageSubresource = Vulkan.VkImageSubresourceLayers
-        {
-            .aspectMask = Vulkan.VK_IMAGE_ASPECT_COLOR_BIT,
-            .mipLevel = 0,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        },
-        .imageOffset = .{.x = 0, .y = 0, .z = 0},
-        .imageExtent = Vulkan.VkExtent3D
-        {
-            .depth = 1,
-        },
-    };
     VK_CHECK(Vulkan.vkBeginCommandBuffer(VulkanGlobalState._commandBuffers[0], &cmdBeginInfo));
-    deviceOffset = 0;
+    // копіювання
+    var regions: [16]Vulkan.VkBufferImageCopy = undefined;
+    @memset(&regions,
+            .{
+                .imageSubresource = Vulkan.VkImageSubresourceLayers
+                {
+                    .aspectMask = Vulkan.VK_IMAGE_ASPECT_COLOR_BIT,
+                    .layerCount = 1,
+                },
+                .imageExtent = Vulkan.VkExtent3D
+                {
+                    .depth = 1,
+                },
+            }
+    );
     for(0..numImages) |imageIndex|
     {
         const image = &images[imageIndex];
         var mipWidth: usize = image.width;
         var mipHeight: usize = image.height;
         var mipSize: usize = image.mipSize;
-        var bufferOffset: usize = deviceOffset;
+        var bufferOffset: usize = imageBindingOffset[imageIndex];
         for(0..image.mipsCount) |mipIndex|
         {
-            region.imageSubresource.mipLevel = @intCast(mipIndex);
-            region.bufferOffset = bufferOffset;
-            region.imageExtent.width = @intCast(mipWidth);
-            region.imageExtent.height = @intCast(mipHeight);
-            Vulkan.vkCmdCopyBufferToImage(VulkanGlobalState._commandBuffers[0], stagingBuffer, textures[imageIndex].vkImage, Vulkan.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+            regions[mipIndex].imageSubresource.mipLevel = @intCast(mipIndex);
+            regions[mipIndex].bufferOffset = bufferOffset;
+            regions[mipIndex].imageExtent.width = @intCast(mipWidth);
+            regions[mipIndex].imageExtent.height = @intCast(mipHeight);
             bufferOffset += mipSize;
             mipWidth /= 2;
+//             if(mipWidth == 0)
+//                 mipWidth = 1;
             mipHeight /= 2;
+            if(mipHeight == 0)
+                mipHeight = 1;
             mipSize /= 4;
             mipSize += ((image.alignment - mipSize % image.alignment) % image.alignment);
         }
-        deviceOffset += images_full_sizes[imageIndex];
+        Vulkan.vkCmdCopyBufferToImage(VulkanGlobalState._commandBuffers[0], stagingBuffer, textures[imageIndex].vkImage, Vulkan.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, image.mipsCount, &regions);
     }
-
+//     print("mipWidth {d}\nmipHeight: {d}\n", .{mipWidth, mipHeight});
     VK_CHECK(Vulkan.vkEndCommandBuffer(VulkanGlobalState._commandBuffers[0]));
     VK_CHECK(Vulkan.vkQueueSubmit(VulkanGlobalState._graphicsQueue, 1, &submitInfo, null));
     _ = Vulkan.vkQueueWaitIdle(VulkanGlobalState._graphicsQueue);
@@ -329,6 +356,110 @@ fn loadTextures(buffer: [*]const u8, images: [*]const Image, textures: [*]Textur
     VK_CHECK(Vulkan.vkQueueSubmit(VulkanGlobalState._graphicsQueue, 1, &submitInfo, null));
     _ = Vulkan.vkQueueWaitIdle(VulkanGlobalState._graphicsQueue);
 }
+fn loadMeshes(buffer: [*] u8, meshesData: [*]const MeshData, meshesOffsets: [*]ArchiveGPU.Mesh, meshesCount: u64, vkBuffer: *Vulkan.VkBuffer, vkDeviceMemory: *Vulkan.VkDeviceMemory) void
+{
+//     _ = buffer;
+//     _ = meshesDescriptors;
+//     _ = deviceMemory;
+    var srcSize: u64 = 0;
+    var sizeDeviceMemory: u64 = 0;
+    var memRequirements: Vulkan.VkMemoryRequirements = undefined;
+    var indexBufferOffsets: [512]u64 = undefined;
+    var vertexBufferOffsets: [512]u64 = undefined;
+//     var
+    for(0..meshesCount) |bufferIndex|
+    {
+        indexBufferOffsets[bufferIndex] = sizeDeviceMemory;
+        sizeDeviceMemory += meshesData[bufferIndex].indicesBufferSize;
+        vertexBufferOffsets[bufferIndex] = sizeDeviceMemory;
+        sizeDeviceMemory += meshesData[bufferIndex].verticesBufferSize;
+        meshesOffsets[bufferIndex].indexVkBufferOffset = @intCast(indexBufferOffsets[bufferIndex]);
+        meshesOffsets[bufferIndex].vertexVkBufferOffset = @intCast(vertexBufferOffsets[bufferIndex]);
+    }
+    srcSize = sizeDeviceMemory;
+    VkBuffer.createVkBuffer(sizeDeviceMemory, Vulkan.VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | Vulkan.VK_BUFFER_USAGE_INDEX_BUFFER_BIT, vkBuffer);
+    Vulkan.vkGetBufferMemoryRequirements(VulkanGlobalState._device, vkBuffer.*, &memRequirements);
+    sizeDeviceMemory = memRequirements.size;
+//     print("alignment: {d}\n", .{memRequirements.alignment});
+//     print("{d}\n", .{(memRequirements.alignment - memRequirements.size % memRequirements.alignment) % memRequirements.alignment});
+    var dstBuffer: Vulkan.VkBuffer = undefined;
+    var stagingBuffer: Vulkan.VkBuffer = undefined;
+    var stagingDeviceMemory: Vulkan.VkDeviceMemory = undefined;
+
+    var memoryTypeIndex: u32 = undefined;
+
+    var memoryAllocateFlagsInfo = Vulkan.VkMemoryAllocateFlagsInfo
+    {
+        .sType = Vulkan.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
+        .flags = Vulkan.VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
+    };
+    var allocInfo = Vulkan.VkMemoryAllocateInfo
+    {
+        .sType = Vulkan.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+        .allocationSize = sizeDeviceMemory,
+        .pNext = &memoryAllocateFlagsInfo
+    };
+    memoryTypeIndex = VkDeviceMemory.findMemoryType(Vulkan.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+    allocInfo.memoryTypeIndex = memoryTypeIndex;
+    VK_CHECK(Vulkan.vkAllocateMemory(VulkanGlobalState._device, &allocInfo, null, &stagingDeviceMemory));
+    VkBuffer.createVkBuffer(sizeDeviceMemory, Vulkan.VK_BUFFER_USAGE_TRANSFER_SRC_BIT, &stagingBuffer);
+    VK_CHECK(Vulkan.vkBindBufferMemory(VulkanGlobalState._device, stagingBuffer, stagingDeviceMemory, 0));
+
+    memoryTypeIndex = VkDeviceMemory.findMemoryType(Vulkan.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    allocInfo.memoryTypeIndex = memoryTypeIndex;
+    VK_CHECK(Vulkan.vkAllocateMemory(VulkanGlobalState._device, &allocInfo, null, vkDeviceMemory));
+    VkBuffer.createVkBuffer(sizeDeviceMemory, Vulkan.VK_BUFFER_USAGE_TRANSFER_DST_BIT, &dstBuffer);
+    VK_CHECK(Vulkan.vkBindBufferMemory(VulkanGlobalState._device, dstBuffer, vkDeviceMemory.*, 0));
+
+    defer
+    {
+        Vulkan.vkDestroyBuffer(VulkanGlobalState._device, dstBuffer, null);
+        Vulkan.vkDestroyBuffer(VulkanGlobalState._device, stagingBuffer, null);
+        Vulkan.vkFreeMemory(VulkanGlobalState._device, stagingDeviceMemory, null);
+    }
+    var data: ?*anyopaque = undefined;
+    _ = Vulkan.vkMapMemory(VulkanGlobalState._device, stagingDeviceMemory, 0, sizeDeviceMemory, 0, &data);
+    VK_CHECK(Vulkan.vkBindBufferMemory(VulkanGlobalState._device,  vkBuffer.*, vkDeviceMemory.*, 0));
+
+//     var bufferOffset: u64 = 0;
+//     for(0..meshesCount) |bufferIndex|
+//     {
+//         memcpy(@as([*]u8, @ptrCast(data))+indexBufferOffsets[bufferIndex], buffer+bufferOffset, meshesData[bufferIndex].indicesBufferSize);
+//         bufferOffset+=meshesData[bufferIndex].indicesBufferSize;
+//         memcpy(@as([*]u8, @ptrCast(data))+vertexBufferOffsets[bufferIndex], buffer+bufferOffset, meshesData[bufferIndex].verticesBufferSize);
+//         bufferOffset+=meshesData[bufferIndex].verticesBufferSize;
+//     }
+//     memcpy(@ptrCast(data), buffer+indexBufferOffsets[160], sizeDeviceMemory);
+    memcpy(@ptrCast(data), buffer, srcSize);
+    Vulkan.vkUnmapMemory(VulkanGlobalState._device, stagingDeviceMemory);
+
+    const cmdBeginInfo = Vulkan.VkCommandBufferBeginInfo
+    {
+        .sType = Vulkan.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = Vulkan.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+    };
+    _ = Vulkan.vkBeginCommandBuffer(VulkanGlobalState._commandBuffers[0], &cmdBeginInfo);
+
+    const copyRegion = Vulkan.VkBufferCopy
+    {
+        .size = sizeDeviceMemory,
+    };
+    //copyRegion.srcOffset = 0; // Optional
+    //copyRegion.dstOffset = 0; // Optional
+    Vulkan.vkCmdCopyBuffer(VulkanGlobalState._commandBuffers[0], stagingBuffer, dstBuffer, 1, &copyRegion);
+
+    _ = Vulkan.vkEndCommandBuffer(VulkanGlobalState._commandBuffers[0]);
+
+    const submitInfo = Vulkan.VkSubmitInfo
+    {
+        .sType = Vulkan.VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &VulkanGlobalState._commandBuffers[0],
+    };
+
+    _ = Vulkan.vkQueueSubmit(VulkanGlobalState._graphicsQueue, 1, &submitInfo, null);
+    _ = Vulkan.vkQueueWaitIdle(VulkanGlobalState._graphicsQueue);
+}
 pub fn clb_custom_read(dirfd: fd_t, path: [*:0]const u8, archive: *ArchiveGPU) void
 {
 //     _ = archive;
@@ -354,23 +485,55 @@ pub fn clb_custom_read(dirfd: fd_t, path: [*:0]const u8, archive: *ArchiveGPU) v
         print("incorrect clb signature!\n", .{});
         exit(0);
     }
-    archive.texturesCount = fileBufferPtrItr[4];
-//     archive.meshesCount = fileBufferPtrItr[5];
-    fileBufferPtrItr+=6;
+//     archive.texturesCount = fileBufferPtrItr[4];
+    archive.texturesCount = alignPtrCast(*u16, fileBufferPtrItr+4).*;
+    archive.meshesCount = alignPtrCast(*u16, fileBufferPtrItr+6).*;
+    fileBufferPtrItr+=8;
     stdout.print("texturesCount: {d}\n", .{archive.texturesCount}) catch unreachable;
+    stdout.print("meshesCount: {d}\n", .{archive.meshesCount}) catch unreachable;
+    const hashesCount: u64 = archive.texturesCount+archive.meshesCount;
+    const resourceID: [*]u16 = @ptrCast(&main.resourceID);
+    for(0..main.hashes.len) |enumHash|
+    {
+        for(0..archive.texturesCount) |archiveHash|
+        {
+            if(main.hashes[enumHash] == alignPtrCast([*]u64, fileBufferPtrItr)[archiveHash])
+            {
+//                 main.resourceIDs[enumHash] = @intCast(archiveHash);
+                resourceID[enumHash] = @intCast(archiveHash);
+                break;
+            }
+        }
+        const meshesHashesPtr = fileBufferPtrItr+archive.texturesCount*8;
+        for(0..archive.meshesCount) |archiveHash|
+        {
+            if(main.hashes[enumHash] == alignPtrCast([*]u64, meshesHashesPtr)[archiveHash])
+            {
+//                 main.resourceIDs[enumHash] = @intCast(archiveHash);
+                resourceID[enumHash] = @intCast(archiveHash);
+                break;
+            }
+        }
+    }
+    fileBufferPtrItr+=hashesCount*8;
+//     exit(0);
 //     stdout.print("meshesCount: {d}\n", .{archive.meshesCount}) catch unreachable;
     archive.textures = (GlobalState.allocator.alloc(Texture, archive.texturesCount) catch unreachable).ptr;
+    archive.meshes = (GlobalState.allocator.alloc(ArchiveGPU.Mesh, archive.meshesCount) catch unreachable).ptr;
 //     archive.meshes = (GlobalState.allocator.alloc(ArchiveCPU.Mesh, archive.meshesCount) catch unreachable).ptr;
 
     const textures = (GlobalState.allocator.alloc(Image, archive.texturesCount) catch unreachable).ptr;
+    const meshes = (GlobalState.allocator.alloc(MeshData, archive.meshesCount) catch unreachable).ptr;
     defer GlobalState.allocator.free(textures[0..archive.texturesCount]);
+    defer GlobalState.allocator.free(meshes[0..archive.meshesCount]);
     var texturesSize: u64 = 0;
+    var meshesSize: u64 = 0;
     for(textures[0..archive.texturesCount]) |*texture|
     {
-        const nameLen: u64 = fileBufferPtrItr[0];
-        fileBufferPtrItr+=1;
-        stdout.print("{s}\n", .{fileBufferPtrItr[0..nameLen]}) catch unreachable;
-        fileBufferPtrItr+=nameLen;
+//         const nameLen: u64 = fileBufferPtrItr[0];
+//         fileBufferPtrItr+=1;
+//         stdout.print("{s}\n", .{fileBufferPtrItr[0..nameLen]}) catch unreachable;
+//         fileBufferPtrItr+=nameLen;
         texture.size = readFromPtr(u32, fileBufferPtrItr);
         texture.mipSize = readFromPtr(u32, fileBufferPtrItr+4);
         texture.width = readFromPtr(u16, fileBufferPtrItr+8);
@@ -378,14 +541,101 @@ pub fn clb_custom_read(dirfd: fd_t, path: [*:0]const u8, archive: *ArchiveGPU) v
         texture.format = readFromPtr(u32, fileBufferPtrItr+12);
         texture.alignment = fileBufferPtrItr[16];
         texture.mipsCount = fileBufferPtrItr[17];
-//         const textureSize: u64 = readFromPtr(u32, fileBufferPtrItr);
         fileBufferPtrItr+=18;
         texturesSize+=texture.size;
     }
-    const texturesBuffer = PageAllocator.map(texturesSize);
-    memcpyDstAlign(texturesBuffer.ptr, fileBufferPtrItr, texturesSize);
-    loadTextures(texturesBuffer.ptr, textures, archive.textures, archive.texturesCount, &archive.texturesVkDeviceMemory);
-    PageAllocator.unmap(texturesBuffer);
+    for(meshes[0..archive.meshesCount]) |*mesh|
+    {
+        mesh.indicesBufferSize = readFromPtr(u32, fileBufferPtrItr);
+        mesh.verticesBufferSize = readFromPtr(u32, fileBufferPtrItr+4);
+        fileBufferPtrItr+=8;
+        meshesSize += mesh.indicesBufferSize+mesh.verticesBufferSize;
+    }
+//     fileBufferPtrItr+=texturesSize;
+//     meshesSize = 0;
+//     for(0..161) |i|
+//     {
+//         const indicesBufferSize = meshes[i].indicesBufferSize;
+//         const verticesBufferSize = meshes[i].verticesBufferSize;
+//         print("index: {d}\n", .{i});
+// //         print("{d}\n", .{readFromPtr(u16, fileBufferPtrItr+meshesSize)});
+// //         print("{d}\n", .{readFromPtr(u16, fileBufferPtrItr+meshesSize+2)});
+// //         print("{d}\n", .{readFromPtr(u16, fileBufferPtrItr+meshesSize+4)});
+//
+//         print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize)});
+//         print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+4)});
+//         print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+8)});
+//         meshesSize += indicesBufferSize+verticesBufferSize;
+//     }
+//     exit(0);
+//     memcpyDstAlign(texturesBuffer.ptr, fileBufferPtrItr, texturesSize);
+    loadTextures(fileBufferPtrItr, textures, archive.textures, archive.texturesCount, &archive.texturesVkDeviceMemory);
+    fileBufferPtrItr+=texturesSize;
+//     meshesSize = 0;
+//     for(0..archive.meshesCount) |index|
+//     {
+//         const indicesBufferSize = meshes[index].indicesBufferSize;
+//         const verticesBufferSize = meshes[index].verticesBufferSize;
+//         if(index == 94)
+//         {
+//             print("{d}\n", .{indicesBufferSize});
+//             for(0..60) |i|
+//             {
+//                 print("{d}\t", .{readFromPtr(u8, fileBufferPtrItr+meshesSize+i*2)});
+//                 print("{d}\n", .{readFromPtr(u8, fileBufferPtrItr+meshesSize+i*2+1)});
+//             }
+//             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+0)});
+//             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+4)});
+//             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+8)});
+//             print("\n", .{});
+//             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+64+0)});
+//             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+64+4)});
+//             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+64+8)});
+//             print("\n", .{});
+//             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+64*2+0)});
+//             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+64*2+4)});
+//             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+64*2+8)});
+//         }
+//         meshesSize += indicesBufferSize+verticesBufferSize;
+//     }
+//     exit(0);
+    loadMeshes(fileBufferPtrItr, meshes, archive.meshes, archive.meshesCount, &archive.meshesVkBuffer, &archive.meshesVkDeviceMemory);
+    const VkBufferDeviceAddressInfo = Vulkan.VkBufferDeviceAddressInfo
+    {
+        .sType = Vulkan.VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
+        .buffer = archive.meshesVkBuffer,
+    };
+    archive.meshesVkDeviceAddress = Vulkan.vkGetBufferDeviceAddress(VulkanGlobalState._device, &VkBufferDeviceAddressInfo);
+//     PageAllocator.unmap(texturesBuffer);
+//     PageAllocator.unmap(meshesBuffer);
+
+    createDescriptorsData(archive);
+
+//     const cmdBeginInfo = Vulkan.VkCommandBufferBeginInfo
+//     {
+//         .sType = Vulkan.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+//         .flags = Vulkan.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+//     };
+//     _ = Vulkan.vkBeginCommandBuffer(VulkanGlobalState._commandBuffers[0], &cmdBeginInfo);
+//
+//     var descriptorSets: [2]Vulkan.VkDescriptorSet = undefined;
+//     descriptorSets[0] = archive.descriptorSet;
+//     descriptorSets[1] = Hex.palette_DescriptorSet;
+//     Vulkan.vkCmdBindDescriptorSets(VulkanGlobalState._commandBuffers[0], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Hex.Hex_PipelineLayout, 1, descriptorSets.len, &descriptorSets, 0, null);
+//
+//     _ = Vulkan.vkEndCommandBuffer(VulkanGlobalState._commandBuffers[0]);
+//
+//     const submitInfo = Vulkan.VkSubmitInfo
+//     {
+//         .sType = Vulkan.VK_STRUCTURE_TYPE_SUBMIT_INFO,
+//         .commandBufferCount = 1,
+//         .pCommandBuffers = &VulkanGlobalState._commandBuffers[0],
+//     };
+//
+//     _ = Vulkan.vkQueueSubmit(VulkanGlobalState._graphicsQueue, 1, &submitInfo, null);
+//     _ = Vulkan.vkQueueWaitIdle(VulkanGlobalState._graphicsQueue);
+
+
 
 //     for(archive.meshes[0..archive.meshesCount]) |*mesh|
 //     {
@@ -493,7 +743,7 @@ pub fn createDescriptorsData(archive: *ArchiveGPU) void
 
     VK_CHECK(Vulkan.vkAllocateDescriptorSets(VulkanGlobalState._device, &allocInfo, &archive.descriptorSet));
 
-    var textureInfo: [256]Vulkan.VkDescriptorImageInfo = undefined;
+    var textureInfo: [65536/24]Vulkan.VkDescriptorImageInfo = undefined;
     for(0..archive.texturesCount) |i|
     {
         textureInfo[i].imageLayout = Vulkan.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -524,4 +774,37 @@ pub fn createDescriptorsData(archive: *ArchiveGPU) void
     };
 
     Vulkan.vkUpdateDescriptorSets(VulkanGlobalState._device, descriptorWrites.len, &descriptorWrites, 0, null);
+}
+pub fn bindDescriptorSets(archive: *ArchiveGPU) void
+{
+    const cmdBeginInfo = Vulkan.VkCommandBufferBeginInfo
+    {
+        .sType = Vulkan.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = Vulkan.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+    };
+    _ = Vulkan.vkBeginCommandBuffer(VulkanGlobalState._commandBuffers[0], &cmdBeginInfo);
+
+//     Vulkan.vkCmdBindPipeline(VulkanGlobalState._commandBuffers[0], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Hex.Hex_Pipeline);
+    var descriptorSets: [2]Vulkan.VkDescriptorSet = undefined;
+    descriptorSets[0] = archive.descriptorSet;
+    descriptorSets[1] = Hex.palette_DescriptorSet;
+    Vulkan.vkCmdBindDescriptorSets(VulkanGlobalState._commandBuffers[0], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Hex.Hex_PipelineLayout, 1, descriptorSets.len, &descriptorSets, 0, null);
+
+    _ = Vulkan.vkEndCommandBuffer(VulkanGlobalState._commandBuffers[0]);
+
+    const submitInfo = Vulkan.VkSubmitInfo
+    {
+        .sType = Vulkan.VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &VulkanGlobalState._commandBuffers[0],
+    };
+
+    _ = Vulkan.vkQueueSubmit(VulkanGlobalState._graphicsQueue, 1, &submitInfo, null);
+}
+pub fn bindDescriptorSetsLoop(archive: *ArchiveGPU) void
+{
+    var descriptorSets: [2]Vulkan.VkDescriptorSet = undefined;
+    descriptorSets[0] = archive.descriptorSet;
+    descriptorSets[1] = Hex.palette_DescriptorSet;
+    Vulkan.vkCmdBindDescriptorSets(VulkanGlobalState._commandBuffers[0], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Hex.Hex_PipelineLayout, 1, descriptorSets.len, &descriptorSets, 0, null);
 }

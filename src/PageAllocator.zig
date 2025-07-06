@@ -27,7 +27,9 @@ pub inline fn map(n: usize) []u8
                                                       .{ .TYPE = .PRIVATE, .ANONYMOUS = true },
                                                       -1,
                                                       0,));
+//             std.debug.print("{*}\n", .{ptr});
             _ = @cmpxchgStrong(@TypeOf(std.heap.next_mmap_addr_hint), &std.heap.next_mmap_addr_hint, hint, @alignCast(ptr), .monotonic, .monotonic);
+//             std.process.exit(0);
             return ptr[0..n];
         },
         else => @compileError("unsupported target")

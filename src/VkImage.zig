@@ -646,3 +646,38 @@ pub fn createVkImages__VkImageViews__VkDeviceMemory_AoS(srcStructArray: [*]u8, s
     VK_CHECK(Vulkan.vkQueueSubmit(VulkanGlobalState._graphicsQueue, 1, &submitInfo, null));
     _ = Vulkan.vkQueueWaitIdle(VulkanGlobalState._graphicsQueue);
 }
+pub fn transitionImage(cmd: Vulkan.VkCommandBuffer, image: Vulkan.VkImage, srcStageMask: Vulkan.VkPipelineStageFlags2, dstStageMask: Vulkan.VkPipelineStageFlags2, srcAccessMask: Vulkan.VkAccessFlags2, dstAccessMask: Vulkan.VkAccessFlags2, currentLayout: Vulkan.VkImageLayout, newLayout: Vulkan.VkImageLayout) void
+{
+    const imageBarrier = Vulkan.VkImageMemoryBarrier2
+    {
+        .sType = Vulkan.VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+        .srcStageMask = srcStageMask,
+        .srcAccessMask = srcAccessMask,
+        .dstStageMask = dstStageMask,
+        .dstAccessMask = dstAccessMask,
+
+        .oldLayout = currentLayout,
+        .newLayout = newLayout,
+
+        .subresourceRange = Vulkan.VkImageSubresourceRange
+        {
+            .aspectMask = Vulkan.VK_IMAGE_ASPECT_COLOR_BIT,
+            .baseMipLevel = 0,
+            // VK_REMAINING_MIP_LEVELS
+            .levelCount = 1,
+            .baseArrayLayer = 0,
+            // VK_REMAINING_ARRAY_LAYERS
+            .layerCount = 1,
+        },
+        .image = image,
+    };
+    const depInfo = Vulkan.VkDependencyInfo
+    {
+        .sType = Vulkan.VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+
+        .imageMemoryBarrierCount = 1,
+        .pImageMemoryBarriers = &imageBarrier,
+
+    };
+    Vulkan.vkCmdPipelineBarrier2(cmd, &depInfo);
+}

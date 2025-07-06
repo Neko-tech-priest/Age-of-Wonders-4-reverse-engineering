@@ -12,10 +12,10 @@ layout(location = 0) out vec4 outColor;
 
 vec3 GroundIBL = vec3(0.12, 0.26, 0.17);
 
-float DirectLightIntensity = 5.0;
+float DirectLightIntensity = 4.0;
 // vec3 SunDirection = (vec3(0, 0, 1));
-vec3 SunDirection = normalize(vec3(1, 1, 1));
-// vec3 SunDirection = (vec3(0.57291, 0.57291, 0.58613));
+// vec3 SunDirection = normalize(vec3(1, 1, 1));
+vec3 SunDirection = (vec3(1, 1, 1));
 float ambient = 10.0;
 void main()
 {
@@ -26,7 +26,7 @@ void main()
     normal.z = sqrt(1.0 - normal.x * normal.x - normal.y * normal.y);
 	float alpha = data.a;
 	vec3 color = texture(palette, vec2(alpha * 0.8750 - 0.0625, 0.5)).rgb;
-    float diff = max(dot(normal, SunDirection), 0.0);
+    float diff = min(max(dot(normal, SunDirection), 0.0), 1.0);
 //     color += GroundIBL*0.5;
     color *= diff;
     color *= DirectLightIntensity;

@@ -1,13 +1,13 @@
 #version 450
 #extension GL_EXT_buffer_reference : require
-// #extension GL_EXT_scalar_block_layout : enable
+#extension GL_EXT_scalar_block_layout : enable
 // Hex
 struct Vertex
 {
     vec3 position;
 };
-layout(buffer_reference) readonly buffer HexVertexBuffer{
-    vec3 vertices[];
+layout(scalar, buffer_reference) readonly buffer HexVertexBuffer{
+    Vertex vertices[];
 };
 uint hexIndices[12] = uint[](
     0, 2, 4,
@@ -19,9 +19,8 @@ struct HexData
 {
     vec2 position;
     uint textureIndex;
-    uint alignment;
 };
-layout(buffer_reference) readonly buffer HexDataBuffer{
+layout(scalar, buffer_reference) readonly buffer HexDataBuffer{
     HexData data[];
 };
 layout( push_constant ) uniform constants
@@ -42,10 +41,11 @@ layout(location = 1) out flat uint outTextureIndex;
 void main()
 {
 //     vec3 position = pushConstants.hexVertexBuffer.vertices[hexIndices[gl_VertexIndex]];
-    vec3 position = pushConstants.hexVertexBuffer.vertices[gl_VertexIndex];
+    Vertex vertex = pushConstants.hexVertexBuffer.vertices[gl_VertexIndex];
     HexData data = pushConstants.hexDataBuffer.data[gl_InstanceIndex];
+    vec3 position = vertex.position;
     position.xy += data.position;
-	gl_Position = ubo.proj * ubo.view * vec4(position, 1.0);
+	gl_Position = vec4(vertex.position, 1.0) * ubo.view * ubo.proj;
 	outPos = vec2(position.x, position.y)*sqrt(3.0)/6;
     outTextureIndex = data.textureIndex;
 //     pushConstants.hexDataBuffer.data[0].textureIndex+=1;

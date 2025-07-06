@@ -229,9 +229,11 @@ fn createVkDevice(stackMemoryPtr: [*]u8) void
     var features12 = Vulkan.VkPhysicalDeviceVulkan12Features
     {
         .sType = Vulkan.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
+//         .descriptorIndexing = Vulkan.VK_TRUE,
         .bufferDeviceAddress = Vulkan.VK_TRUE,
         .runtimeDescriptorArray = Vulkan.VK_TRUE,
         .shaderSampledImageArrayNonUniformIndexing = Vulkan.VK_TRUE,
+        .scalarBlockLayout = Vulkan.VK_TRUE,
         .pNext = @ptrCast(&features13),
 //         .pNext = @ptrCast(&PhysicalDeviceDynamicRenderingFeaturesKHR),
     };
@@ -406,8 +408,8 @@ pub fn createTextureSampler() void
 //     .addressModeV = Vulkan.VK_SAMPLER_ADDRESS_MODE_REPEAT,
 //     .addressModeW = Vulkan.VK_SAMPLER_ADDRESS_MODE_REPEAT,
 //      .mipLodBias
-		.anisotropyEnable = Vulkan.VK_TRUE,
-		.maxAnisotropy = VulkanGlobalState._deviceProperties.limits.maxSamplerAnisotropy,
+        .anisotropyEnable = Vulkan.VK_TRUE,
+        .maxAnisotropy = VulkanGlobalState._deviceProperties.limits.maxSamplerAnisotropy,
 		.compareEnable = Vulkan.VK_FALSE,
 		.compareOp = Vulkan.VK_COMPARE_OP_NEVER,//VK_COMPARE_OP_ALWAYS
 		.minLod = 0.0,

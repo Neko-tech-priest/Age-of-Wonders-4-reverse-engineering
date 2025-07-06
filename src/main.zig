@@ -41,47 +41,28 @@ const AoW4_clb_custom = @import("AoW4_clb_custom.zig");
 // const AoW4_SGH = @import("AoW4_SGH.zig");
 // const clb_custom = @import("clb_custom.zig");
 
+const Pipelines = @import("Pipelines.zig");
 const Square = @import("Square.zig");
 const Hex = @import("Hex.zig");
 const Simplexnoise1234 = @import("Simplexnoise1234.zig");
 
-fn transitionImage(cmd: Vulkan.VkCommandBuffer, image: Vulkan.VkImage, srcStageMask: Vulkan.VkPipelineStageFlags2, dstStageMask: Vulkan.VkPipelineStageFlags2, srcAccessMask: Vulkan.VkAccessFlags2, dstAccessMask: Vulkan.VkAccessFlags2, currentLayout: Vulkan.VkImageLayout, newLayout: Vulkan.VkImageLayout) void
+const ResourceID = struct
 {
-    const imageBarrier = Vulkan.VkImageMemoryBarrier2
-    {
-        .sType = Vulkan.VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-        .srcStageMask = srcStageMask,
-        .srcAccessMask = srcAccessMask,
-        .dstStageMask = dstStageMask,
-        .dstAccessMask = dstAccessMask,
-
-        .oldLayout = currentLayout,
-        .newLayout = newLayout,
-
-        .subresourceRange = Vulkan.VkImageSubresourceRange
-        {
-            .aspectMask = Vulkan.VK_IMAGE_ASPECT_COLOR_BIT,
-            .baseMipLevel = 0,
-            // VK_REMAINING_MIP_LEVELS
-            .levelCount = 1,
-            .baseArrayLayer = 0,
-            // VK_REMAINING_ARRAY_LAYERS
-            .layerCount = 1,
-        },
-        .image = image,
-    };
-    const depInfo = Vulkan.VkDependencyInfo
-    {
-        .sType = Vulkan.VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-
-        .imageMemoryBarrierCount = 1,
-        .pImageMemoryBarriers = &imageBarrier,
-
-    };
-    Vulkan.vkCmdPipelineBarrier2(cmd, &depInfo);
-}
+    @"SM_Fertile_Plains_Grass_01_TerrainTexture.tga": u16,
+    @"LushGrass_Temperate_[DIFF_DXT5].tga": u16,
+    @"Temp_Fertile_Fern_01_LushGrass": u16,
+};
+pub const hashes: [std.meta.fields(ResourceID).len]u64 = blk:
+{
+    const resourceStrings = std.meta.fieldNames(ResourceID);
+    var localHashes: [std.meta.fields(ResourceID).len]u64 = undefined;
+    for (&localHashes, resourceStrings) |*hash, res| hash.* = std.hash.RapidHash.hash(0, res);
+    break :blk localHashes;
+};
+pub var resourceID: ResourceID = undefined;
 pub fn main() void
 {
+//     std.meta.fieldNames()
 	defer GlobalState.arena.deinit();
     GlobalState.allocator, const is_debug = comptime switch(builtin.mode)
     {
@@ -93,6 +74,9 @@ pub fn main() void
         if(is_debug)
             _ = GlobalState.debugAllocator.deinit();
     }
+//     const resourceStrings = std.meta.fieldNames(ResourceID);
+//     print("{s}\n", .{resourceStrings[0]});
+//     comptime calculateHashes();
 //     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
 //     defer arena.deinit();
 //     const arenaAllocator = arena.allocator();
@@ -135,50 +119,40 @@ pub fn main() void
 
 //     const AoW3_dirfd_dst: std.posix.fd_t = CustomFS.open("AoW3", .{.ACCMODE = .RDONLY, .DIRECTORY = true});
 //     defer _ = CustomFS.close(AoW3_dirfd_dst);
-// //
-// //     const AoW4_dirfd: i32 = @intCast(linux.open("Age of Wonders 4/Content", .{.ACCMODE = .RDONLY}, mode));
-// //     defer _ = linux.close(AoW4_dirfd);
 //
 //     var AoW3_archive: AoW3_clb_custom.ArchiveGPU = undefined;
 //     defer AoW3_archive.unload();
 // //
-//     var archiveTempMemory: []u8 = undefined;
-// "Title/Libraries/Terrain/Temp_TerrainTextures.clb"
-//     AoW3_clb_custom.clb_custom_read(arenaAllocator, "Title/Libraries/Terrain/Temp_TerrainTextures.clb", AoW3_dirfd_dst, &AoW3_archive);
-//     AoW4_clb_custom.clb_convert(&archiveTempMemory, "Title/Libraries/Strategic/Pickup_Strategic.clb", AoW4_dirfd);
-//     PageAllocator.unmap(archiveTempMemory);
-    const AoW4_dirfd: std.posix.fd_t = CustomFS.open("AoW4", .{.ACCMODE = .RDONLY, .DIRECTORY = true});
+
+//     _ = GlobalState.arena.reset(.free_all);
+
+    const AoW4_dirfd: std.posix.fd_t = CustomFS.open("./", .{.ACCMODE = .RDONLY, .DIRECTORY = true});
     defer _ = CustomFS.close(AoW4_dirfd);
 
     var AoW4_archive: AoW4_clb_custom.ArchiveGPU = undefined;
     defer AoW4_archive.unload();
-    AoW4_clb_custom.clb_custom_read(AoW4_dirfd, "Title/Libraries/Strategic/Terrain_Textures_Strategic.clb", &AoW4_archive);
-    AoW4_clb_custom.createDescriptorsData(&AoW4_archive);
-//     var Pickup_Strategic: AoW4_clb_custom.ArchiveCPU = undefined;
-//     defer Pickup_Strategic.unload();
-//     AoW4_clb_custom.clb_custom_read(AoW4_dirfd, "Title/Libraries/Strategic/Pickup_Strategic.clb", &Pickup_Strategic);
-//     var CrystalTree_Strategic: AoW4_clb_custom.ArchiveCPU = undefined;
-//     defer CrystalTree_Strategic.unload();
-//     AoW4_clb_custom.clb_custom_read(AoW4_dirfd, "Title/Libraries/Strategic/CrystalTree_Strategic.clb", &CrystalTree_Strategic);
-//     Hex.Create_DiffuseMaterial_VkDescriptorSetLayout(AoW3_archive.texturesCount, &AoW3_archive.descriptorSetLayout);
-//     Hex.Create_DiffuseMaterial_VkDescriptorPool(AoW3_archive.texturesCount, &AoW3_archive.descriptorPool);
-//     Hex.Create_DiffuseMaterial_VkDescriptorSet(AoW3_archive.texturesCount, AoW3_archive.textures, AoW3_archive.descriptorSetLayout, AoW3_archive.descriptorPool, &AoW3_archive.descriptorSet);
-//     _ = GlobalState.arena.reset(.free_all);
-//     print("{?}\n", .{globalState.gpa.detectLeaks()});
+//     Title/Libraries/Strategic/Terrain_Textures_Strategic.clb
+//     for(0..20) |_|
+//     {
+//         AoW4_clb_custom.clb_custom_read(AoW4_dirfd, "customArchive.clb", &AoW4_archive);
+//         AoW4_archive.unload();
+//     }
+    AoW4_clb_custom.clb_custom_read(AoW4_dirfd, "customArchive.clb", &AoW4_archive);
+//     print("{d}\n", .{resourceIDs[@intFromEnum(ResourceID.@"Temp_Fertile_Fern_01_LushGrass")]});
     // Palette
-// {
+{
     // Grassland 00
-    var colorTable = [4*8]u8
-    {
-        98, 71, 41, 255,
-        58, 71, 20, 255,
-        84, 89, 32, 255,
-        61, 92, 15, 255,
-        61, 84, 20, 255,
-        55, 92, 14, 255,
-        46, 113, 19, 255,
-        75, 109, 20, 255,
-    };
+//     var colorTable = [4*8]u8
+//     {
+//         98, 71, 41, 255,
+//         58, 71, 20, 255,
+//         84, 89, 32, 255,
+//         61, 92, 15, 255,
+//         61, 84, 20, 255,
+//         55, 92, 14, 255,
+//         46, 113, 19, 255,
+//         75, 109, 20, 255,
+//     };
     // Grassland 00 (Tropical)
 //     var colorTable = [4*8]u8
 //     {
@@ -240,6 +214,18 @@ pub fn main() void
 //         9,   52,  4,  255,
 // //         255, 255, 255,255,
 //     };
+}
+    var colorTable = [4*8]u8
+    {
+        98, 71, 41, 255,
+        58, 71, 20, 255,
+        84, 89, 32, 255,
+        61, 92, 15, 255,
+        61, 84, 20, 255,
+        55, 92, 14, 255,
+        46, 113, 19, 255,
+        75, 109, 20, 255,
+    };
     const palette = Image
     {
         .data = &colorTable,
@@ -262,20 +248,21 @@ pub fn main() void
     }
     Hex.createHexPaletteSampler();
     defer Vulkan.vkDestroySampler(VulkanGlobalState._device, Hex._paletteSampler, null);
-    var palette_DescriptorSetLayout: Vulkan.VkDescriptorSetLayout = undefined;
-    var palette_DescriptorPool: Vulkan.VkDescriptorPool = undefined;
-    var palette_DescriptorSet: Vulkan.VkDescriptorSet = undefined;
-    Hex.createPaletteDescriptorsData(paletteTexture.vkImageView, &palette_DescriptorSetLayout, &palette_DescriptorPool, &palette_DescriptorSet);
+//     var palette_DescriptorSetLayout: Vulkan.VkDescriptorSetLayout = undefined;
+//     var palette_DescriptorPool: Vulkan.VkDescriptorPool = undefined;
+//     var palette_DescriptorSet: Vulkan.VkDescriptorSet = undefined;
+    Hex.createPaletteDescriptorsData(paletteTexture.vkImageView, &Hex.palette_DescriptorSetLayout, &Hex.palette_DescriptorPool, &Hex.palette_DescriptorSet);
+
 //     Hex.Create_palette_VkDescriptorPool(&palette_DescriptorPool);
 //     Hex.Create_palette_VkDescriptorSet(paletteTexture.vkImageView, palette_DescriptorSetLayout, palette_DescriptorPool, &palette_DescriptorSet);
     defer
     {
-        Vulkan.vkDestroyDescriptorSetLayout(VulkanGlobalState._device, palette_DescriptorSetLayout, null);
-        Vulkan.vkDestroyDescriptorPool(VulkanGlobalState._device, palette_DescriptorPool, null);
+        Vulkan.vkDestroyDescriptorSetLayout(VulkanGlobalState._device, Hex.palette_DescriptorSetLayout, null);
+        Vulkan.vkDestroyDescriptorPool(VulkanGlobalState._device, Hex.palette_DescriptorPool, null);
     }
 // }
     // Hex
-    const distanceSize = 2;
+    const distanceSize = 1;
     const HexVertices = [6]Hex.Vertex
     {
         .{
@@ -367,7 +354,7 @@ pub fn main() void
 //         Vulkan.vkFreeMemory(VulkanGlobalState._device, SquareVkIndexDeviceMemory, null);
 //     }
 }
-    const mapRadius = 2;
+    const mapRadius = 0;
     comptime var hexsCount: u64 = 1;
     comptime
     {
@@ -385,7 +372,9 @@ pub fn main() void
     const horizontalSpacing = @sqrt(3.0) * distanceSize;
     for(0..hexsCount) |i|
     {
-        hexsData[i].textureIndex = 14;
+//         hexsData[i].textureIndex = 14;
+//         hexsData[i].textureIndex = resourceIDs[@intFromEnum(ResourceEnum.@"SM_Fertile_Plains_Grass_01_TerrainTexture.tga")];
+        hexsData[i].textureIndex = resourceID.@"SM_Fertile_Plains_Grass_01_TerrainTexture.tga";
     }
     const x_coordStatic = mapRadius * -1 * horizontalSpacing;
     var hexIndex: u64 = 0;
@@ -504,6 +493,24 @@ pub fn main() void
         Vulkan.vkDestroyBuffer(VulkanGlobalState._device, hexsDataBuffer, null);
         Vulkan.vkFreeMemory(VulkanGlobalState._device, hexsDataVkDeviceMemory, null);
     }
+    Hex.Create_Hex_Pipeline(AoW4_archive.descriptorSetLayout, Hex.palette_DescriptorSetLayout, &Hex.Hex_PipelineLayout, &Hex.Hex_Pipeline);
+    defer
+    {
+        Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Hex.Hex_Pipeline, null);
+        Vulkan.vkDestroyPipelineLayout(VulkanGlobalState._device, Hex.Hex_PipelineLayout, null);
+    }
+    Pipelines.Create_PNUCT_Pipeline(AoW4_archive.descriptorSetLayout, &Pipelines.PNUCT_PipelineLayout, &Pipelines.PNUCT_Pipeline);
+    defer
+    {
+        Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Pipelines.PNUCT_Pipeline, null);
+        Vulkan.vkDestroyPipelineLayout(VulkanGlobalState._device, Pipelines.PNUCT_PipelineLayout, null);
+    }
+    Pipelines.Create_PNUCTP_Pipeline();
+    defer
+    {
+        Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Pipelines.PNUCTP_Pipeline, null);
+//         Vulkan.vkDestroyPipelineLayout(VulkanGlobalState._device, AoW4.PNUCT_PipelineLayout, null);
+    }
 //     var mappedMemory: ?*anyopaque = undefined;
 //     _ = Vulkan.vkMapMemory(VulkanGlobalState._device, hexsDataVkDeviceMemory, 0, 16, 0, &mappedMemory);
 //     print("{*}\n", .{@as(*anyopaque, @ptrFromInt(hexsDataVkDeviceAddress))});
@@ -553,14 +560,6 @@ pub fn main() void
 //         Vulkan.vkDestroyDescriptorPool(VulkanGlobalState._device, noiseMap_DescriptorPool, null);
 //     }
 }
-    var Hex_Pipeline: Vulkan.VkPipeline = null;
-    var Hex_PipelineLayout: Vulkan.VkPipelineLayout = null;
-    Hex.Create_Hex_Pipeline(AoW4_archive.descriptorSetLayout, palette_DescriptorSetLayout, &Hex_PipelineLayout, &Hex_Pipeline);
-    defer
-    {
-        Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Hex_Pipeline, null);
-        Vulkan.vkDestroyPipelineLayout(VulkanGlobalState._device, Hex_PipelineLayout, null);
-    }
 //     var Square_Pipeline: Vulkan.VkPipeline = null;
 //     var Square_PipelineLayout: Vulkan.VkPipelineLayout = null;
 //     Square.Create_Square_Pipeline(noiseMap_DescriptorSetLayout, &Square_PipelineLayout, &Square_Pipeline);
@@ -576,9 +575,9 @@ pub fn main() void
     var windowPresent: bool = true;
     //
     var currentFrame: usize = 0;
-    const cameraMove = 1;
+    const cameraMove = 0.5;
 //     var frame: u64 = 0;
-// var swapchainImageIndex: u32 = undefined;
+//     _ = Vulkan.vkDeviceWaitIdle(VulkanGlobalState._device);
     while (!bQuit)
     {
         //Handle events on queue
@@ -709,11 +708,8 @@ pub fn main() void
             };
             //start the command buffer recording
             VK_CHECK(Vulkan.vkBeginCommandBuffer(cmd, &cmdBeginInfo));
-// //             transitionImage(cmd, VulkanGlobalState._swapchainImages[swapchainImageIndex],
-// //                             Vulkan.VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT, Vulkan.VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-// //                             Vulkan.VK_ACCESS_2_MEMORY_WRITE_BIT, Vulkan.VK_ACCESS_2_MEMORY_WRITE_BIT | Vulkan.VK_ACCESS_2_MEMORY_READ_BIT,
-// //                             Vulkan.VK_IMAGE_LAYOUT_UNDEFINED, Vulkan.VK_IMAGE_LAYOUT_GENERAL);
-            transitionImage(cmd, VulkanGlobalState._swapchainImages[swapchainImageIndex],
+//             AoW4_clb_custom.bindDescriptorSetsLoop(&AoW4_archive);
+            VkImage.transitionImage(cmd, VulkanGlobalState._swapchainImages[swapchainImageIndex],
                             Vulkan.VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                             Vulkan.VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                             Vulkan.VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | Vulkan.VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
@@ -786,21 +782,46 @@ pub fn main() void
             };
             Vulkan.vkCmdSetScissor(VulkanGlobalState._commandBuffers[currentFrame], 0, 1, &scissor);
 
-            Vulkan.vkCmdBindPipeline(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Hex_Pipeline);
+            Vulkan.vkCmdBindPipeline(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Hex.Hex_Pipeline);
 
             var hexPushConstants: [2]u64 = .{HexVkVertexBufferAddress, hexsDataVkDeviceAddress};
-            Vulkan.vkCmdPushConstants(cmd, Hex_PipelineLayout, Vulkan.VK_SHADER_STAGE_VERTEX_BIT, 0, 16, &hexPushConstants);
+            Vulkan.vkCmdPushConstants(cmd, Hex.Hex_PipelineLayout, Vulkan.VK_SHADER_STAGE_VERTEX_BIT, 0, 16, &hexPushConstants);
+//             AoW4_clb_custom.bindDescriptorSetsLoop(&AoW4_archive);
             var descriptorSets: [3]Vulkan.VkDescriptorSet = undefined;
             descriptorSets[0] = Camera._cameraDescriptorSets[currentFrame];
             descriptorSets[1] = AoW4_archive.descriptorSet;
-            descriptorSets[2] = palette_DescriptorSet;
-            Vulkan.vkCmdBindDescriptorSets(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Hex_PipelineLayout, 0, descriptorSets.len, &descriptorSets, 0, null);
+            descriptorSets[2] = Hex.palette_DescriptorSet;
+            Vulkan.vkCmdBindDescriptorSets(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Hex.Hex_PipelineLayout, 0, 3, &descriptorSets, 0, null);
 //             Vulkan.vkCmdDraw(VulkanGlobalState._commandBuffers[currentFrame], 12, hexsCount, 0, 0);
             Vulkan.vkCmdBindIndexBuffer(VulkanGlobalState._commandBuffers[currentFrame], HexVkIndexBuffer, 0, Vulkan.VK_INDEX_TYPE_UINT16);
-            Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], 12, hexsCount, 0, 0, 0);
+//             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], 12, hexsCount, 0, 0, 0);
+
+
+            Vulkan.vkCmdBindPipeline(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines.PNUCT_Pipeline);
+            Vulkan.vkCmdBindDescriptorSets(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines.PNUCT_PipelineLayout, 0, 2, &descriptorSets, 0, null);
+            hexPushConstants[0] = AoW4_archive.meshesVkDeviceAddress+AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].vertexVkBufferOffset;
+            hexPushConstants[1] = resourceID.@"LushGrass_Temperate_[DIFF_DXT5].tga";
+            Vulkan.vkCmdPushConstants(cmd, Pipelines.PNUCT_PipelineLayout, Vulkan.VK_SHADER_STAGE_VERTEX_BIT, 0, 8, &hexPushConstants);
+            Vulkan.vkCmdPushConstants(cmd, Pipelines.PNUCT_PipelineLayout, Vulkan.VK_SHADER_STAGE_FRAGMENT_BIT, 8, 4, &hexPushConstants[1]);
+            Vulkan.vkCmdBindIndexBuffer(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshesVkBuffer, AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].indexVkBufferOffset, Vulkan.VK_INDEX_TYPE_UINT16);
+            Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], 3192*3, 1, 0, 0, 0);
+
+//             hexPushConstants[0] = AoW4_archive.meshesVkDeviceAddress+AoW4_archive.meshes[161].vertexVkBufferOffset;
+//             Vulkan.vkCmdPushConstants(cmd, AoW4.PNUCT_PipelineLayout, Vulkan.VK_SHADER_STAGE_VERTEX_BIT, 0, 8, &hexPushConstants);
+//             Vulkan.vkCmdBindIndexBuffer(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshesVkBuffer, AoW4_archive.meshes[161].indexVkBufferOffset, Vulkan.VK_INDEX_TYPE_UINT16);
+//             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], 282*3, 1, 0, 0, 0);
+
+
+//             Vulkan.vkCmdBindPipeline(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, AoW4.PNUCTP_Pipeline);
+//             hexPushConstants[0] = AoW4_archive.meshesVkDeviceAddress+AoW4_archive.meshes[94].vertexVkBufferOffset;
+//             Vulkan.vkCmdPushConstants(cmd, AoW4.PNUCT_PipelineLayout, Vulkan.VK_SHADER_STAGE_VERTEX_BIT, 0, 8, &hexPushConstants);
+//             Vulkan.vkCmdBindDescriptorSets(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, AoW4.PNUCT_PipelineLayout, 0, 2, &descriptorSets, 0, null);
+//             Vulkan.vkCmdBindIndexBuffer(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshesVkBuffer, AoW4_archive.meshes[94].indexVkBufferOffset, Vulkan.VK_INDEX_TYPE_UINT16);
+//             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], 2*3, 1, 0, 0, 0);
+
 
             Vulkan.vkCmdEndRendering(VulkanGlobalState._commandBuffers[currentFrame]);
-            transitionImage(cmd, VulkanGlobalState._swapchainImages[swapchainImageIndex],
+            VkImage.transitionImage(cmd, VulkanGlobalState._swapchainImages[swapchainImageIndex],
                             //Vulkan.VK_PIPELINE_STAGE_2_CLEAR_BIT
                             //Vulkan.VK_ACCESS_2_TRANSFER_WRITE_BIT
                             Vulkan.VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
