@@ -50,7 +50,11 @@ const ResourceID = struct
 {
     @"SM_Fertile_Plains_Grass_01_TerrainTexture.tga": u16,
     @"LushGrass_Temperate_[DIFF_DXT5].tga": u16,
+    @"BirchTrees_[DIFF_DXT5].tga": u16,
+    @"PineTrees_[DIFF_DXT5].tga": u16,
     @"Temp_Fertile_Fern_01_LushGrass": u16,
+    @"Temperate_Tree_03_BirchTrees1": u16,
+    @"Temperate_Forest_06_PineTrees": u16,
 };
 pub const hashes: [std.meta.fields(ResourceID).len]u64 = blk:
 {
@@ -62,7 +66,6 @@ pub const hashes: [std.meta.fields(ResourceID).len]u64 = blk:
 pub var resourceID: ResourceID = undefined;
 pub fn main() void
 {
-//     std.meta.fieldNames()
 	defer GlobalState.arena.deinit();
     GlobalState.allocator, const is_debug = comptime switch(builtin.mode)
     {
@@ -578,6 +581,8 @@ pub fn main() void
     const cameraMove = 0.5;
 //     var frame: u64 = 0;
 //     _ = Vulkan.vkDeviceWaitIdle(VulkanGlobalState._device);
+//     print("{d}\n", .{AoW4_archive.meshesVkDeviceAddress+AoW4_archive.meshes[resourceID.@"Temperate_Forest_06_PineTrees"].indexVkBufferOffset - AoW4_archive.meshesVkDeviceAddress+AoW4_archive.meshes[resourceID.@"Temperate_Forest_06_PineTrees"].vertexVkBufferOffset});
+    print("{d}\n", .{resourceID.@"Temperate_Forest_06_PineTrees"});
     while (!bQuit)
     {
         //Handle events on queue
@@ -804,7 +809,7 @@ pub fn main() void
             Vulkan.vkCmdPushConstants(cmd, Pipelines.PNUCT_PipelineLayout, Vulkan.VK_SHADER_STAGE_VERTEX_BIT, 0, 8, &hexPushConstants);
             Vulkan.vkCmdPushConstants(cmd, Pipelines.PNUCT_PipelineLayout, Vulkan.VK_SHADER_STAGE_FRAGMENT_BIT, 8, 4, &hexPushConstants[1]);
             Vulkan.vkCmdBindIndexBuffer(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshesVkBuffer, AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].indexVkBufferOffset, Vulkan.VK_INDEX_TYPE_UINT16);
-            Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], 3192*3, 1, 0, 0, 0);
+//             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], 3192*3, 1, 0, 0, 0);
 
 //             hexPushConstants[0] = AoW4_archive.meshesVkDeviceAddress+AoW4_archive.meshes[161].vertexVkBufferOffset;
 //             Vulkan.vkCmdPushConstants(cmd, AoW4.PNUCT_PipelineLayout, Vulkan.VK_SHADER_STAGE_VERTEX_BIT, 0, 8, &hexPushConstants);
@@ -812,12 +817,14 @@ pub fn main() void
 //             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], 282*3, 1, 0, 0, 0);
 
 
-//             Vulkan.vkCmdBindPipeline(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, AoW4.PNUCTP_Pipeline);
-//             hexPushConstants[0] = AoW4_archive.meshesVkDeviceAddress+AoW4_archive.meshes[94].vertexVkBufferOffset;
-//             Vulkan.vkCmdPushConstants(cmd, AoW4.PNUCT_PipelineLayout, Vulkan.VK_SHADER_STAGE_VERTEX_BIT, 0, 8, &hexPushConstants);
-//             Vulkan.vkCmdBindDescriptorSets(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, AoW4.PNUCT_PipelineLayout, 0, 2, &descriptorSets, 0, null);
-//             Vulkan.vkCmdBindIndexBuffer(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshesVkBuffer, AoW4_archive.meshes[94].indexVkBufferOffset, Vulkan.VK_INDEX_TYPE_UINT16);
-//             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], 2*3, 1, 0, 0, 0);
+            Vulkan.vkCmdBindPipeline(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines.PNUCTP_Pipeline);
+            hexPushConstants[0] = AoW4_archive.meshesVkDeviceAddress+AoW4_archive.meshes[resourceID.@"Temperate_Forest_06_PineTrees"].vertexVkBufferOffset;
+            hexPushConstants[1] = resourceID.@"PineTrees_[DIFF_DXT5].tga";
+            Vulkan.vkCmdPushConstants(cmd, Pipelines.PNUCT_PipelineLayout, Vulkan.VK_SHADER_STAGE_VERTEX_BIT, 0, 8, &hexPushConstants);
+            Vulkan.vkCmdPushConstants(cmd, Pipelines.PNUCT_PipelineLayout, Vulkan.VK_SHADER_STAGE_FRAGMENT_BIT, 8, 4, &hexPushConstants[1]);
+
+            Vulkan.vkCmdBindIndexBuffer(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshesVkBuffer, AoW4_archive.meshes[resourceID.@"Temperate_Forest_06_PineTrees"].indexVkBufferOffset, Vulkan.VK_INDEX_TYPE_UINT16);
+            Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], 144*3, 1, 0, 0, 0);
 
 
             Vulkan.vkCmdEndRendering(VulkanGlobalState._commandBuffers[currentFrame]);

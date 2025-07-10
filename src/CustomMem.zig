@@ -65,7 +65,7 @@ pub inline fn memcpyInline(noalias dst: [*]u8, noalias src: [*]const u8, comptim
     comptime var offset: u64 = 0;
     inline while(offset < sizeIn) : (offset+=SIMDalignment)
     {
-        @as(*align(1) @Vector(SIMDalignment64, u64), @ptrCast(@alignCast(dst+offset))).* = @as(*align(1) @Vector(SIMDalignment64, u64), @ptrCast(@constCast((src+offset)))).*;
+        @as(*align(1) @Vector(SIMDalignment64, u64), @ptrCast(@alignCast(dst+offset))).* = @as(*const align(1) @Vector(SIMDalignment64, u64), @ptrCast((src+offset))).*;
     }
 }
 pub inline fn memcpy(noalias dst: [*]u8, noalias src: [*]const u8, sizeIn: u64) void
@@ -74,7 +74,7 @@ pub inline fn memcpy(noalias dst: [*]u8, noalias src: [*]const u8, sizeIn: u64) 
     var offset: u64 = 0;
     while(offset < sizeIn) : (offset+=SIMDalignment)
     {
-        @as(*align(1) @Vector(SIMDalignment64, u64), @ptrCast(@alignCast(dst+offset))).* = @as(*align(1) @Vector(SIMDalignment64, u64), @ptrCast(@constCast((src+offset)))).*;
+        @as(*align(1) @Vector(SIMDalignment64, u64), @ptrCast(@alignCast(dst+offset))).* = @as(*const align(1) @Vector(SIMDalignment64, u64), @ptrCast((src+offset))).*;
     }
 }
 // pub fn memcpyNoalign(noalias dst: [*]u8, noalias src: [*]const u8, sizeIn: u64) void
@@ -104,7 +104,7 @@ pub inline fn memcpyDstAlign(noalias dst: [*]u8, noalias src: [*]const u8, sizeI
     var offset: u64 = 0;
     while(offset < sizeIn) : (offset+=vectorSize_u8)
     {
-        @as(*@Vector(vectorSize_u64, u64), @ptrCast(@alignCast(dst+offset))).* = @as(*align(1) @Vector(vectorSize_u64, u64), @ptrCast(@constCast((src+offset)))).*;
+        @as(*@Vector(vectorSize_u64, u64), @ptrCast(@alignCast(dst+offset))).* = @as(*const align(1) @Vector(SIMDalignment64, u64), @ptrCast((src+offset))).*;
     }
 }
 pub inline fn memcmp(noalias src1: [*]const u8, noalias src2: [*]const u8, sizeIn: u64) bool

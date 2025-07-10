@@ -8,6 +8,7 @@ const fd_t = std.posix.fd_t;
 
 const CustomFS = @import("CustomFS.zig");
 const CustomMem = @import("CustomMem.zig");
+const ptrCast = CustomMem.ptrCast;
 const alignPtrCast = CustomMem.alignPtrCast;
 const allocInFixedBuffer = CustomMem.allocInFixedBuffer;
 const allocInFixedBufferT = CustomMem.allocInFixedBufferT;
@@ -651,7 +652,6 @@ fn readChunk_Mesh(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, fileBufferPtrItera
     var stackBufferPtr = stackBufferPtrIn;
     const mesh = &archive.meshes[archive.meshesCount];
 //     _ = fileBuffer;
-//     _ = dataBlockPtr;
     var bufferPtrItr: [*]u8 = undefined;
     const BlockTable = readTable(&stackBufferPtr, fileBufferPtrIteratorIn);
     {
@@ -672,49 +672,36 @@ fn readChunk_Mesh(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, fileBufferPtrItera
         for(3..BlockTable.tablesCount) |tableIndex|
         {
             bufferPtrItr = BlockTable.dataAfterHeaderPtr + BlockTable.header[tableIndex][1];
-//             print("type: {x} offset: {x}\n", .{BlockTable.header[tableIndex][0], @intFromPtr(bufferPtrItr) - @intFromPtr(fileBuffer)});
-//             if(readFromPtr(u16, bufferPtrItr) == 0x1403)
             {
-//                 print("offset: {x}\n", .{@intFromPtr(fileBufferPtrIterator) - @intFromPtr(fileBuffer)});
+//                 print("type: {x}\toffset: {x}\n", .{BlockTable.header[tableIndex][0],@intFromPtr(bufferPtrItr) - @intFromPtr(fileBuffer)});
                 switch(BlockTable.header[tableIndex][0])
                 {
                     0x3d =>
                     {
-//                         print("offset: {x}\n", .{@intFromPtr(fileBufferPtrIterator) - @intFromPtr(fileBuffer)});
                         const dataTable = readTableNear(bufferPtrItr);
                         {
                             const elementsCount: u32 = readFromPtr(u32, dataTable.dataAfterHeaderPtr + 1);
+                            print("indicesCount: {d}\n", .{elementsCount});
                             const dataOffset: u64 = readFromPtr(u32, dataTable.dataAfterHeaderPtr + 5);
                             bufferPtrItr = dataTable.dataAfterHeaderPtr + 9;
                             const dataSize: u32 = readFromPtr(u32, bufferPtrItr+4);
                             const dataCompressedSize: u32 = readFromPtr(u32, bufferPtrItr+8);
+                            print("dataOffset: {x}\n", .{dataOffset});
+//                             print("dataSize: {d}\ndataCompressedSize: {d}\n", .{dataSize, dataCompressedSize});
 //                             stdout.print("indicesCount: {d}\nindicesSize: {d}\n", .{elementsCount, dataSize}) catch unreachable;
 //                             mesh.indicesBuffer = allocInFixedBuffer(memoryBufferItr, dataSize, CustomMem.SIMDalignment);//(allocator.alignedAlloc(u8, CustomMem.alingment, dataSize) catch unreachable).ptr;
                             mesh.indicesBuffer = PageAllocator.map(dataSize).ptr;
                             mesh.indicesBufferSize = dataSize;
                             mesh.indicesCount = @intCast(elementsCount);
-                            _ = lz4.LZ4_decompress_safe(dataBlockPtr+dataOffset, mesh.indicesBuffer, @intCast(dataCompressedSize), @intCast(dataSize));
-//                             var ifZero: bool = true;
-// //                             var indexMax: u64 = 0;
-//                             for(0..elementsCount) |i|
-//                             {
-//                                 const indexValue = mesh.indicesBuffer[i*2];
-//                                 if(indexValue > 0)
-//                                 {
-//                                     ifZero = false;
-//                                 }
-//                             }
-//                             if(ifZero)
-//                             {
-//                                 for(0..elementsCount) |i|
-//                                 {
-//                                     const indexValue: u8 = mesh.indicesBuffer[i*2+1];
-//                                     mesh.indicesBuffer[i*2+1] = 0;
-//                                     mesh.indicesBuffer[i*2] = indexValue;
-//                                 }
-//                             }
+                            if(dataCompressedSize != dataSize)
+                            {
+                                _ = lz4.LZ4_decompress_safe(dataBlockPtr+dataOffset, mesh.indicesBuffer, @intCast(dataCompressedSize), @intCast(dataSize));
+                            }
+                            else
+                            {
+                                memcpy(mesh.indicesBuffer, dataBlockPtr+dataOffset, dataSize);
+                            }
                         }
-//                             print("resultSize: {d}\n", .{resultSize});
                     },
                     0x3e =>
                     {
@@ -785,11 +772,10 @@ fn readChunk_Mesh(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, fileBufferPtrItera
                                     vertexTypeString[indexVertexAttributesCount+1] = attributeElementsCount+0x30;
                                     bufferPtrItr+=8;
                                 }
-//                                 stdout.print("vertexSize: {d}\nvertex format: {s}\n", .{vertexSize, vertexTypeString[0..indexVertexAttributesCount]}) catch unreachable;
-//                                     stdout.print("vertexSize: {d}\nvertex format: {s}\n", .{vertexSize, vertexTypeString[0..indexVertexAttributesCount]});
                                 mesh.vertexFormat = vertexTypeString;
                             }
                             const elementsCount: u32 = readFromPtr(u32, dataTable.dataAfterHeaderPtr + dataTable.dataPtr[1*2+1]);
+                            print("verticesCount: {d}\n", .{elementsCount});
                             const dataOffset: u64 = readFromPtr(u32, dataTable.dataAfterHeaderPtr + dataTable.dataPtr[2*2+1]);
                             bufferPtrItr = dataTable.dataAfterHeaderPtr + dataTable.dataPtr[2*2+1] + 4;
 //                             print("{x}\n", .{@intFromPtr(fileBufferPtrIterator) - @intFromPtr(fileBuffer)});
@@ -801,28 +787,18 @@ fn readChunk_Mesh(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, fileBufferPtrItera
                             //(allocator.alignedAlloc(u8, CustomMem.alingment, dataSize) catch unreachable).ptr;
                             mesh.verticesBufferSize = dataSize;
                             mesh.verticesCount = @intCast(elementsCount);
-                            _ = lz4.LZ4_decompress_safe(dataBlockPtr+dataOffset, mesh.verticesBuffer, @intCast(dataCompressedSize), @intCast(dataSize));
-//                             stdout.print("verticesCount: {d}\nverticesSize: {d}\n", .{elementsCount, dataSize}) catch unreachable;
+                            if(dataCompressedSize != dataSize)
+                            {
+                                _ = lz4.LZ4_decompress_safe(dataBlockPtr+dataOffset, mesh.verticesBuffer, @intCast(dataCompressedSize), @intCast(dataSize));
+                            }
+                            else
+                            {
+                                memcpy(mesh.verticesBuffer, dataBlockPtr+dataOffset, dataSize);
+                            }
                         }
-//                         mesh.verticesBuffer = (globalState.arenaAllocator.alignedAlloc(u8, CustomMem.alingment, dataSize) catch unreachable).ptr;
-//                         mesh.verticesBufferSize = @intCast(dataSize);
-//                         _ = lz4.LZ4_decompress_safe(dataBlockPtr+dataOffset, mesh.verticesBuffer, @intCast(dataCompressedSize), @intCast(dataSize));
-                        //                         print("resultSize: {d}\n", .{resultSize});
-                        //                     const mode: std.os.linux.mode_t = 0o755;
-                        //                     const texture_fd: i32 = @intCast(std.os.linux.open("verticesData.raw", .{.ACCMODE = .WRONLY, .CREAT = true, .TRUNC = true}, mode));
-                        //                     defer _ = std.os.linux.close(texture_fd);
-                        //                     _ = std.os.linux.write(texture_fd, meshData, @intCast(dataSize));
-                        //                     break;
                     },
                     else =>
                     {
-//                         if(log_Mesh)
-//                         {
-//                             if(readFromPtr(u16, bufferPtrItr) == 0x1403)
-//                             {
-//                                 print("skip 0x1403 chunk: {x}\n", .{BlockTable.header[tableIndex][0]});
-//                             }
-//                         }
                     }
                 }
             }
@@ -1098,7 +1074,7 @@ pub fn clb_convert(path: [*:0]const u8, srcDirfd: fd_t, archive: *Archive, ) voi
     stdout.print("{s}\n", .{bufferPtrItr[0..libraryNameLen]}) catch unreachable;
     bufferPtrItr += readFromPtr(u32, clb_TablesOffsetsPtr);
     const dataOffsetPtr = bufferPtrItr + readFromPtr(u32, fileBuffer+16);
-//     print("dataOffset: {x}\n", .{@intFromPtr(dataOffsetPtr)-@intFromPtr(fileBuffer)});
+    print("dataOffset: {x}\n", .{@intFromPtr(dataOffsetPtr)-@intFromPtr(fileBuffer)});
 //     print("{x}\n\n", .{@intFromPtr(fileBufferPtrIterator) - @intFromPtr(fileBuffer)});
     if(readFromPtr(u16, bufferPtrItr) != 0x0383)
     {
@@ -1206,32 +1182,99 @@ pub fn clb_convert(path: [*:0]const u8, srcDirfd: fd_t, archive: *Archive, ) voi
                 if(chunkType == 0x0035)
                 {
                     bufferPtrItr+=4;
-                    const mesh = &archive.meshes[archive.meshesCount];
                     print("{d}\n", .{archive.meshesCount});
                     readChunk_Mesh(stackBufferPtr, fileBuffer, bufferPtrItr, stringsOffsetPtr, dataOffsetPtr, archive);
+//                     const mesh = &archive.meshes[archive.meshesCount];
                     stdout.print("\n", .{}) catch unreachable;
 //                     P3N3U2C4T4P3
-                    const vertexFormat = [16]u8{'P','3','N','3','U','2','C','4','T','4','P','3',0,0,0,0};
+//                     const vertexFormat = [16]u8{'P','3','N','3','U','2','C','4','T','4','P','3',0,0,0,0};
 //                     const vertexFormat: []const u8 = "P3N3U2C4T4P30000"[0..16];
 //                     print("{s}\n", .{vertexFormat[0..16]});
 //                     print("{s}\n", .{mesh.vertexFormat[0..16]});
-                    if(@as(u128, @bitCast(vertexFormat[0..16].*)) == readFromPtr(u128, &mesh.vertexFormat))
+//                     if(@as(u128, @bitCast(vertexFormat[0..16].*)) == readFromPtr(u128, &mesh.vertexFormat))
                     {
-                        const indexTemplate = [6]u8{0,1,2,3,2,1};
-                        var indexOffset: u64 = 0;
-                        var indexAddition: u16 = 0;
-                        while(indexOffset < mesh.indicesBufferSize)
-                        {
-                            for(0..6) |i|
-                            {
-                                ptrOnValue(u16, mesh.indicesBuffer+indexOffset+i*2).* = indexTemplate[i]+indexAddition;
-                            }
-                            indexOffset+=12;
-                            indexAddition+=4;
-                        }
+//                         var verticesStackBuffer: [64*4]u8 = undefined;
+//                         var vertexOffsetPtr = mesh.verticesBuffer;
+//                         var indexOffsetPtr = mesh.indicesBuffer;
+//                         var indexAddition: u16 = 0;
+//                         const indexTemplate = [6]u8{0,1,2,2,3,0};
+//                         while(@intFromPtr(vertexOffsetPtr) < @intFromPtr(mesh.verticesBuffer) + mesh.verticesBufferSize)
+//                         {
+//                             memcpy(&verticesStackBuffer, vertexOffsetPtr, 64*4);
+//                             const VertexPosition = struct
+//                             {
+//                                 x: f32,
+//                                 y: f32,
+//                             };
+//                             var vertexPositions: [4]VertexPosition = undefined;
+//                             for(0..4) |vertexIndex|
+//                             {
+//                                 vertexPositions[vertexIndex] = readFromPtr(VertexPosition, vertexOffsetPtr+vertexIndex*64);
+//                             }
+//                             var min_x: f32 = vertexPositions[0].x;
+//                             var min_y: f32 = vertexPositions[0].y;
+//                             var max_x: f32 = vertexPositions[0].x;
+//                             var max_y: f32 = vertexPositions[0].y;
+//                             for(1..3) |vertexIndex|
+//                             {
+//                                 if(vertexPositions[vertexIndex].x < min_x)
+//                                 {
+//                                     min_x = vertexPositions[vertexIndex].x;
+//                                 }
+//                                 if(vertexPositions[vertexIndex].y < min_y)
+//                                 {
+//                                     min_y = vertexPositions[vertexIndex].y;
+//                                 }
+//                                 if(vertexPositions[vertexIndex].x > max_x)
+//                                 {
+//                                     max_x = vertexPositions[vertexIndex].x;
+//                                 }
+//                                 if(vertexPositions[vertexIndex].y > max_y)
+//                                 {
+//                                     max_y = vertexPositions[vertexIndex].y;
+//                                 }
+//                             }
+// //                             for(0..4) |vertexIndex|
+// //                             {
+// //                                 if(vertexPositions[vertexIndex].x == min_x and vertexPositions[vertexIndex].y == max_y)
+// //                                 {
+// //                                     memcpy(vertexOffsetPtr, ptrCast([*]u8, &verticesStackBuffer)+vertexIndex*64, 64);
+// //                                     break;
+// //                                 }
+// //                             }
+// //                             for(0..4) |vertexIndex|
+// //                             {
+// //                                 if(vertexPositions[vertexIndex].x == max_x and vertexPositions[vertexIndex].y == max_y)
+// //                                 {
+// //                                     memcpy(vertexOffsetPtr+64, ptrCast([*]u8, &verticesStackBuffer)+vertexIndex*64, 64);
+// //                                     break;
+// //                                 }
+// //                             }
+// //                             for(0..4) |vertexIndex|
+// //                             {
+// //                                 if(vertexPositions[vertexIndex].x == max_x and vertexPositions[vertexIndex].y == min_y)
+// //                                 {
+// //                                     memcpy(vertexOffsetPtr+64*2, ptrCast([*]u8, &verticesStackBuffer)+vertexIndex*64, 64);
+// //                                     break;
+// //                                 }
+// //                             }
+// //                             for(0..4) |vertexIndex|
+// //                             {
+// //                                 if(vertexPositions[vertexIndex].x == min_x and vertexPositions[vertexIndex].y == min_y)
+// //                                 {
+// //                                     memcpy(vertexOffsetPtr+64*3, ptrCast([*]u8, &verticesStackBuffer)+vertexIndex*64, 64);
+// //                                     break;
+// //                                 }
+// //                             }
+//                             for(0..6) |i|
+//                             {
+//                                 ptrOnValue(u16, indexOffsetPtr+i*2).* = indexTemplate[i]+indexAddition;
+//                             }
+//                             vertexOffsetPtr+=64*4;
+//                             indexOffsetPtr+=2*6;
+//                             indexAddition+=4;
+//                         }
                     }
-//                     _ = vertexFormat;
-//                     mesh.vertexFormat
                     archive.meshesCount+=1;
                 }
             }
@@ -1312,6 +1355,7 @@ pub fn convertArchives(comptime archivesPaths: []const[*:0]const u8, srcDirfd: f
             stackBufferPtr+=8;
         }
     }
+//     exit(0);
     _ = CustomFS.write(clb_custom_fd, &stackBuffer, @intFromPtr(stackBufferPtr)-@intFromPtr(&stackBuffer));
     for(archives) |archive|
     {

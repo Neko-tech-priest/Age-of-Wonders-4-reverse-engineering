@@ -462,14 +462,6 @@ fn loadMeshes(buffer: [*] u8, meshesData: [*]const MeshData, meshesOffsets: [*]A
 }
 pub fn clb_custom_read(dirfd: fd_t, path: [*:0]const u8, archive: *ArchiveGPU) void
 {
-//     _ = archive;
-//     const file: std.fs.File = std.fs.cwd().openFileZ(path, .{}) catch
-//     {
-//         print("custom clb not found!\n", .{});exit(0);
-//     };
-//     defer file.close();
-//     const stat = file.stat() catch unreachable;
-//     const file_size: usize = stat.size;
     const filefd: fd_t = CustomFS.openat(dirfd, path, .{.ACCMODE = .RDONLY});
     var fileStat: linux.Stat = undefined;
     _ = CustomFS.fstat(filefd, &fileStat);
@@ -551,50 +543,32 @@ pub fn clb_custom_read(dirfd: fd_t, path: [*:0]const u8, archive: *ArchiveGPU) v
         fileBufferPtrItr+=8;
         meshesSize += mesh.indicesBufferSize+mesh.verticesBufferSize;
     }
-//     fileBufferPtrItr+=texturesSize;
-//     meshesSize = 0;
-//     for(0..161) |i|
-//     {
-//         const indicesBufferSize = meshes[i].indicesBufferSize;
-//         const verticesBufferSize = meshes[i].verticesBufferSize;
-//         print("index: {d}\n", .{i});
-// //         print("{d}\n", .{readFromPtr(u16, fileBufferPtrItr+meshesSize)});
-// //         print("{d}\n", .{readFromPtr(u16, fileBufferPtrItr+meshesSize+2)});
-// //         print("{d}\n", .{readFromPtr(u16, fileBufferPtrItr+meshesSize+4)});
-//
-//         print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize)});
-//         print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+4)});
-//         print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+8)});
-//         meshesSize += indicesBufferSize+verticesBufferSize;
-//     }
-//     exit(0);
-//     memcpyDstAlign(texturesBuffer.ptr, fileBufferPtrItr, texturesSize);
     loadTextures(fileBufferPtrItr, textures, archive.textures, archive.texturesCount, &archive.texturesVkDeviceMemory);
     fileBufferPtrItr+=texturesSize;
-//     meshesSize = 0;
+    meshesSize = 0;
 //     for(0..archive.meshesCount) |index|
 //     {
 //         const indicesBufferSize = meshes[index].indicesBufferSize;
 //         const verticesBufferSize = meshes[index].verticesBufferSize;
-//         if(index == 94)
+//         if(index == 74)
 //         {
 //             print("{d}\n", .{indicesBufferSize});
-//             for(0..60) |i|
+//             for(0..144*3) |i|
 //             {
-//                 print("{d}\t", .{readFromPtr(u8, fileBufferPtrItr+meshesSize+i*2)});
-//                 print("{d}\n", .{readFromPtr(u8, fileBufferPtrItr+meshesSize+i*2+1)});
+//                 print("{d}\n", .{readFromPtr(u16, fileBufferPtrItr+meshesSize+i*2)});
+// //                 print("{d}\n", .{readFromPtr(u8, fileBufferPtrItr+meshesSize+i*2+1)});
 //             }
-//             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+0)});
-//             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+4)});
-//             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+8)});
-//             print("\n", .{});
-//             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+64+0)});
-//             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+64+4)});
-//             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+64+8)});
-//             print("\n", .{});
-//             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+64*2+0)});
-//             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+64*2+4)});
-//             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+64*2+8)});
+// //             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+0)});
+// //             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+4)});
+// //             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+8)});
+// //             print("\n", .{});
+// //             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+64+0)});
+// //             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+64+4)});
+// //             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+64+8)});
+// //             print("\n", .{});
+// //             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+64*2+0)});
+// //             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+64*2+4)});
+// //             print("{d}\n", .{readFromPtr(f32, fileBufferPtrItr+meshesSize+indicesBufferSize+64*2+8)});
 //         }
 //         meshesSize += indicesBufferSize+verticesBufferSize;
 //     }
@@ -610,68 +584,6 @@ pub fn clb_custom_read(dirfd: fd_t, path: [*:0]const u8, archive: *ArchiveGPU) v
 //     PageAllocator.unmap(meshesBuffer);
 
     createDescriptorsData(archive);
-
-//     const cmdBeginInfo = Vulkan.VkCommandBufferBeginInfo
-//     {
-//         .sType = Vulkan.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-//         .flags = Vulkan.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-//     };
-//     _ = Vulkan.vkBeginCommandBuffer(VulkanGlobalState._commandBuffers[0], &cmdBeginInfo);
-//
-//     var descriptorSets: [2]Vulkan.VkDescriptorSet = undefined;
-//     descriptorSets[0] = archive.descriptorSet;
-//     descriptorSets[1] = Hex.palette_DescriptorSet;
-//     Vulkan.vkCmdBindDescriptorSets(VulkanGlobalState._commandBuffers[0], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Hex.Hex_PipelineLayout, 1, descriptorSets.len, &descriptorSets, 0, null);
-//
-//     _ = Vulkan.vkEndCommandBuffer(VulkanGlobalState._commandBuffers[0]);
-//
-//     const submitInfo = Vulkan.VkSubmitInfo
-//     {
-//         .sType = Vulkan.VK_STRUCTURE_TYPE_SUBMIT_INFO,
-//         .commandBufferCount = 1,
-//         .pCommandBuffers = &VulkanGlobalState._commandBuffers[0],
-//     };
-//
-//     _ = Vulkan.vkQueueSubmit(VulkanGlobalState._graphicsQueue, 1, &submitInfo, null);
-//     _ = Vulkan.vkQueueWaitIdle(VulkanGlobalState._graphicsQueue);
-
-
-
-//     for(archive.meshes[0..archive.meshesCount]) |*mesh|
-//     {
-//         const nameLen: u64 = fileBufferPtrItr[0];
-//         fileBufferPtrItr+=1;
-//         stdout.print("{s}\n", .{fileBufferPtrItr[0..nameLen]}) catch unreachable;
-//         fileBufferPtrItr+=nameLen;
-//         mesh.vertexBufferSize = readFromPtr(u32, fileBufferPtrItr);
-//         mesh.indexBufferSize = readFromPtr(u32, fileBufferPtrItr+4);
-//         fileBufferPtrItr+=8;
-//         mesh.vertexBuffer = PageAllocator.map(mesh.vertexBufferSize);
-//         mesh.indexBuffer = PageAllocator.map(mesh.indexBufferSize);
-//         CustomMem.memcpy(mesh.vertexBuffer, fileBufferPtrItr, mesh.vertexBufferSize);
-//         fileBufferPtrItr+=mesh.vertexBufferSize;
-//         CustomMem.memcpy(mesh.indexBuffer, fileBufferPtrItr, mesh.indexBufferSize);
-//         fileBufferPtrItr+=mesh.indexBufferSize;
-//     }
-//     var buffers: [512][*]u8 = undefined;
-//     var buffersSizes: [512]u64 = undefined;
-//
-//     if(archive.texturesCount > 0)
-//     {
-//         VkImage.createVkImages__VkImageViews__VkDeviceMemory_AoS_dst(&images, @ptrCast(archive.textures), @sizeOf(Image.Texture), archive.texturesCount, &archive.texturesVkDeviceMemory);
-//     }
-//     if(archive.meshesCount > 0)
-//     {
-//         VkBuffer.createVkBuffers__VkDeviceMemory_SoA(Vulkan.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &buffers, &buffersSizes, archive.meshes_AoS.vkBuffers, archive.meshesCount*2, &archive.meshesVkDeviceMemory);
-//     }
-//     GlobalState.bw.flush() catch unreachable;
-//     const Mesh = extern struct
-//     {
-//         verticesBufferSize: u32,
-//         indicesBufferSize: u32,
-//         indicesCount: u16,
-//     };
-//     print("Mesh struct size: {d}\n", .{@sizeOf(Mesh)});
 }
 pub fn createDescriptorsData(archive: *ArchiveGPU) void
 {
@@ -800,11 +712,4 @@ pub fn bindDescriptorSets(archive: *ArchiveGPU) void
     };
 
     _ = Vulkan.vkQueueSubmit(VulkanGlobalState._graphicsQueue, 1, &submitInfo, null);
-}
-pub fn bindDescriptorSetsLoop(archive: *ArchiveGPU) void
-{
-    var descriptorSets: [2]Vulkan.VkDescriptorSet = undefined;
-    descriptorSets[0] = archive.descriptorSet;
-    descriptorSets[1] = Hex.palette_DescriptorSet;
-    Vulkan.vkCmdBindDescriptorSets(VulkanGlobalState._commandBuffers[0], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Hex.Hex_PipelineLayout, 1, descriptorSets.len, &descriptorSets, 0, null);
 }

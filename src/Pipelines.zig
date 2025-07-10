@@ -96,10 +96,10 @@ pub fn Create_PNUCT_Pipeline(texturesDescriptorSetLayout: Vulkan.VkDescriptorSet
     {
         .sType = Vulkan.VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
 
-        .depthTestEnable = Vulkan.VK_TRUE,
+//         .depthTestEnable = Vulkan.VK_TRUE,
 //         .depthWriteEnable = Vulkan.VK_TRUE,
         .depthCompareOp = Vulkan.VK_COMPARE_OP_LESS,//VK_COMPARE_OP_GREATER
-        .depthBoundsTestEnable = Vulkan.VK_FALSE,
+//         .depthBoundsTestEnable = Vulkan.VK_FALSE,
 //         .minDepthBounds = 0.0, // Optional
 //         .maxDepthBounds = 1.0, // Optional
         .stencilTestEnable = Vulkan.VK_FALSE,
@@ -201,7 +201,7 @@ pub fn Create_PNUCT_Pipeline(texturesDescriptorSetLayout: Vulkan.VkDescriptorSet
 pub fn Create_PNUCTP_Pipeline() void
 {
     const vertShaderModule: Vulkan.VkShaderModule = VkPipeline.createShaderModule("shaders/PNUCTP.vert.spv");
-    const fragShaderModule: Vulkan.VkShaderModule = VkPipeline.createShaderModule("shaders/Diffuse.frag.spv");
+    const fragShaderModule: Vulkan.VkShaderModule = VkPipeline.createShaderModule("shaders/PNUCTP.frag.spv");
     defer Vulkan.vkDestroyShaderModule(VulkanGlobalState._device, fragShaderModule, null);
     defer Vulkan.vkDestroyShaderModule(VulkanGlobalState._device, vertShaderModule, null);
 
@@ -237,8 +237,6 @@ pub fn Create_PNUCTP_Pipeline() void
         .primitiveRestartEnable = Vulkan.VK_FALSE,
     };
     //VkPipelineTessellationStateCreateInfo TessellationState{};
-
-    //make viewport state from our stored viewport and scissor.
     const ViewportState = Vulkan.VkPipelineViewportStateCreateInfo
     {
         .sType = Vulkan.VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
@@ -283,12 +281,12 @@ pub fn Create_PNUCTP_Pipeline() void
     {
         .sType = Vulkan.VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
 
-        .depthTestEnable = Vulkan.VK_TRUE,
-        .depthWriteEnable = Vulkan.VK_TRUE,
+//         .depthTestEnable = Vulkan.VK_TRUE,
+//         .depthWriteEnable = Vulkan.VK_TRUE,
         .depthCompareOp = Vulkan.VK_COMPARE_OP_LESS,//VK_COMPARE_OP_GREATER
-        .depthBoundsTestEnable = Vulkan.VK_FALSE,
-        .minDepthBounds = 0.0, // Optional
-        .maxDepthBounds = 1.0, // Optional
+//         .depthBoundsTestEnable = Vulkan.VK_FALSE,
+//         .minDepthBounds = 0.0, // Optional
+//         .maxDepthBounds = 1.0, // Optional
         .stencilTestEnable = Vulkan.VK_FALSE,
     };
     //setup dummy color blending. We arent using transparent objects yet
@@ -298,7 +296,10 @@ pub fn Create_PNUCTP_Pipeline() void
     const colorBlendAttachment = Vulkan.VkPipelineColorBlendAttachmentState
     {
         .colorWriteMask = Vulkan.VK_COLOR_COMPONENT_R_BIT | Vulkan.VK_COLOR_COMPONENT_G_BIT | Vulkan.VK_COLOR_COMPONENT_B_BIT | Vulkan.VK_COLOR_COMPONENT_A_BIT,
-        .blendEnable = Vulkan.VK_FALSE,
+        .blendEnable = Vulkan.VK_TRUE,
+        .srcColorBlendFactor = Vulkan.VK_BLEND_FACTOR_SRC_ALPHA,
+        .dstColorBlendFactor = Vulkan.VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+        .colorBlendOp = Vulkan.VK_BLEND_OP_ADD,
     };
     const ColorBlendState = Vulkan.VkPipelineColorBlendStateCreateInfo
     {
@@ -320,17 +321,18 @@ pub fn Create_PNUCTP_Pipeline() void
         .dynamicStateCount = dynamicStates.len,
         .pDynamicStates = &dynamicStates,
     };
-//     const descriptorSetLayouts = [2]Vulkan.VkDescriptorSetLayout
+//     const pushConstantRange  = [2]Vulkan.VkPushConstantRange
 //     {
-//         Camera._cameraDescriptorSetLayout,
-//         texturesDescriptorSetLayout,
-//         //         paletteDescriptorSetLayout,
-//     };
-//     const pushConstantRange  = Vulkan.VkPushConstantRange
-//     {
-//         .stageFlags = Vulkan.VK_SHADER_STAGE_VERTEX_BIT,
-//         .offset = 0,
-//         .size = 8,
+//         .{
+//             .stageFlags = Vulkan.VK_SHADER_STAGE_VERTEX_BIT,
+//             .offset = 0,
+//             .size = 8,
+//         },
+//         .{
+//             .stageFlags = Vulkan.VK_SHADER_STAGE_FRAGMENT_BIT,
+//             .offset = 8,
+//             .size = 4,
+//         },
 //     };
 //     const pipelineLayoutInfo = Vulkan.VkPipelineLayoutCreateInfo
 //     {
@@ -338,7 +340,7 @@ pub fn Create_PNUCTP_Pipeline() void
 //         //.flags = 0,
 //         .setLayoutCount = descriptorSetLayouts.len,
 //         .pSetLayouts = &descriptorSetLayouts,
-//         .pushConstantRangeCount = 1,
+//         .pushConstantRangeCount = 2,
 //         .pPushConstantRanges = &pushConstantRange,
 //     };
 //     VK_CHECK(Vulkan.vkCreatePipelineLayout(VulkanGlobalState._device, &pipelineLayoutInfo, null, pipelineLayout));
