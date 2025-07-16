@@ -77,6 +77,8 @@ pub const ArchiveGPU = struct
     {
         indexVkBufferOffset: u32,
         vertexVkBufferOffset: u32,
+        verticesCount: u16,
+        indicesCount: u16,
     };
 //     pub const Meshes_AoS = struct
 //     {
@@ -536,16 +538,18 @@ pub fn clb_custom_read(dirfd: fd_t, path: [*:0]const u8, archive: *ArchiveGPU) v
         fileBufferPtrItr+=18;
         texturesSize+=texture.size;
     }
-    for(meshes[0..archive.meshesCount]) |*mesh|
+    for(meshes[0..archive.meshesCount], archive.meshes[0..archive.meshesCount]) |*mesh, *meshGPU|
     {
         mesh.indicesBufferSize = readFromPtr(u32, fileBufferPtrItr);
         mesh.verticesBufferSize = readFromPtr(u32, fileBufferPtrItr+4);
-        fileBufferPtrItr+=8;
+        meshGPU.verticesCount = readFromPtr(u16, fileBufferPtrItr+8);
+        meshGPU.indicesCount = @intCast(mesh.indicesBufferSize>>1);
+        fileBufferPtrItr+=10;
         meshesSize += mesh.indicesBufferSize+mesh.verticesBufferSize;
     }
     loadTextures(fileBufferPtrItr, textures, archive.textures, archive.texturesCount, &archive.texturesVkDeviceMemory);
     fileBufferPtrItr+=texturesSize;
-    meshesSize = 0;
+//     meshesSize = 0;
 //     for(0..archive.meshesCount) |index|
 //     {
 //         const indicesBufferSize = meshes[index].indicesBufferSize;

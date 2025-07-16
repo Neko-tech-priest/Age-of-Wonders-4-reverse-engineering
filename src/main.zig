@@ -20,6 +20,7 @@ const VK_CHECK = VulkanGlobalState.VK_CHECK;
 //
 // pub usingnamespace @import("CustomMem.zig");
 const CustomMem = @import("CustomMem.zig");
+const alignPtrCast = CustomMem.alignPtrCast;
 const CustomFS = @import("CustomFS.zig");
 // const PageAllocator = @import("PageAllocator.zig");
 // const memcpy = CustomMem.memcpy;
@@ -265,7 +266,7 @@ pub fn main() void
     }
 // }
     // Hex
-    const distanceSize = 1;
+    const distanceSize = 2;
     const HexVertices = [6]Hex.Vertex
     {
         .{
@@ -287,6 +288,27 @@ pub fn main() void
             .position = [3]f32{-@sqrt(3.0)/2.0*distanceSize, -0.5*distanceSize, 0},
         },
     };
+//     const HexVertices = [6]Hex.Vertex
+//     {
+//         .{
+//             .position = [3]f32{0, 0, 1*distanceSize},
+//         },
+//         .{
+//             .position = [3]f32{@sqrt(3.0)/2.0*distanceSize, 0, 0.5*distanceSize},
+//         },
+//         .{
+//             .position = [3]f32{@sqrt(3.0)/2.0*distanceSize, 0, -0.5*distanceSize},
+//         },
+//         .{
+//             .position = [3]f32{0, 0, -1*distanceSize},
+//         },
+//         .{
+//             .position = [3]f32{-@sqrt(3.0)/2.0*distanceSize, 0, -0.5*distanceSize},
+//         },
+//         .{
+//             .position = [3]f32{-@sqrt(3.0)/2.0*distanceSize, 0, 0.5*distanceSize},
+//         },
+//     };
     const HexIndices = [12]u16{
         0, 2, 4,
         0, 1, 2,
@@ -502,23 +524,29 @@ pub fn main() void
         Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Hex.Hex_Pipeline, null);
         Vulkan.vkDestroyPipelineLayout(VulkanGlobalState._device, Hex.Hex_PipelineLayout, null);
     }
-    Pipelines.Create_PNUCT_Pipeline(AoW4_archive.descriptorSetLayout, &Pipelines.PNUCT_PipelineLayout, &Pipelines.PNUCT_Pipeline);
+    Pipelines.Create_FernSolid_Pipeline(AoW4_archive.descriptorSetLayout, &Pipelines.FernSolid_PipelineLayout, &Pipelines.FernSolid_Pipeline);
     defer
     {
-        Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Pipelines.PNUCT_Pipeline, null);
-        Vulkan.vkDestroyPipelineLayout(VulkanGlobalState._device, Pipelines.PNUCT_PipelineLayout, null);
+        Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Pipelines.FernSolid_Pipeline, null);
+        Vulkan.vkDestroyPipelineLayout(VulkanGlobalState._device, Pipelines.FernSolid_PipelineLayout, null);
     }
-    Pipelines.Create_PNUCTP_Pipeline();
+    Pipelines.Create_FernTransparency_Pipeline();
     defer
     {
-        Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Pipelines.PNUCTP_Pipeline, null);
-//         Vulkan.vkDestroyPipelineLayout(VulkanGlobalState._device, AoW4.PNUCT_PipelineLayout, null);
+        Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Pipelines.FernTransparency_Pipeline, null);
+//         Vulkan.vkDestroyPipelineLayout(VulkanGlobalState._device, Pipelines.FernSolid_PipelineLayout, null);
     }
-//     var mappedMemory: ?*anyopaque = undefined;
-//     _ = Vulkan.vkMapMemory(VulkanGlobalState._device, hexsDataVkDeviceMemory, 0, 16, 0, &mappedMemory);
-//     print("{*}\n", .{@as(*anyopaque, @ptrFromInt(hexsDataVkDeviceAddress))});
-//     print("{*}\n", .{mappedMemory});
-//     print("value: {d}\n", .{(CustomMem.alignPtrCast([*]u32, mappedMemory))[2]});
+//     Pipelines.Create_PNUCTP_Pipeline();
+//     defer
+//     {
+//         Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Pipelines.PNUCTP_Pipeline, null);
+//     }
+    Pipelines.Create_TreesSolid_Pipeline();
+    defer
+    {
+        Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Pipelines.TreesSolid_Pipeline, null);
+        //         Vulkan.vkDestroyPipelineLayout(VulkanGlobalState._device, AoW4.PNUCT_PipelineLayout, null);
+    }
     // Square noise map
 {
 //     var noiseBuffer: [mapDimension*mapDimension]u8 = undefined;
@@ -582,7 +610,7 @@ pub fn main() void
 //     var frame: u64 = 0;
 //     _ = Vulkan.vkDeviceWaitIdle(VulkanGlobalState._device);
 //     print("{d}\n", .{AoW4_archive.meshesVkDeviceAddress+AoW4_archive.meshes[resourceID.@"Temperate_Forest_06_PineTrees"].indexVkBufferOffset - AoW4_archive.meshesVkDeviceAddress+AoW4_archive.meshes[resourceID.@"Temperate_Forest_06_PineTrees"].vertexVkBufferOffset});
-    print("{d}\n", .{resourceID.@"Temperate_Forest_06_PineTrees"});
+//     print("{d}\n", .{resourceID.@"Temperate_Forest_06_PineTrees"});
     while (!bQuit)
     {
         //Handle events on queue
@@ -636,28 +664,15 @@ pub fn main() void
                         },
                         SDL.SDL_SCANCODE_O =>
                         {
-                            //AoW4_meshIndex-=1;
-                            //if(AoW4_meshIndex < 0)
-                                //AoW4_meshIndex = 0;
                         },
                         SDL.SDL_SCANCODE_P =>
                         {
-                            //AoW4_meshIndex+=1;
-                            //if(AoW4_meshIndex == AoW4_meshesCount)
-                                //AoW4_meshIndex-=1;
                         },
                         SDL.SDL_SCANCODE_K =>
                         {
-//                             if(textureIndex != 0)
-//                                 textureIndex-=1;
-    //                          if(textureIndex < 0)
-    //                              textureIndex = 0;
                         },
                         SDL.SDL_SCANCODE_L =>
                         {
-//                             textureIndex+=1;
-//                             if(textureIndex == AoW3_archive.texturesCount)
-//                                 textureIndex-=1;
                         },
                         // повороты
                         SDL.SDL_SCANCODE_UP =>
@@ -670,11 +685,11 @@ pub fn main() void
                         },
                         SDL.SDL_SCANCODE_LEFT =>
                         {
-                            Camera.camera_rotate_z-=5;
+                            Camera.camera_rotate_y-=5;
                         },
                         SDL.SDL_SCANCODE_RIGHT =>
                         {
-                            Camera.camera_rotate_z+=5;
+                            Camera.camera_rotate_y+=5;
                         },
                         else =>{}
                     }
@@ -688,6 +703,7 @@ pub fn main() void
         }
         else
         {
+//             Camera.camera_rotate_z+=0.5;
             var swapchainImageIndex: u32 = 0;
             const cmd = VulkanGlobalState._commandBuffers[currentFrame];
             //wait until the gpu has finished rendering the last frame
@@ -789,7 +805,11 @@ pub fn main() void
 
             Vulkan.vkCmdBindPipeline(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Hex.Hex_Pipeline);
 
-            var hexPushConstants: [2]u64 = .{HexVkVertexBufferAddress, hexsDataVkDeviceAddress};
+            var hexPushConstants: [32]u8 align(8) = undefined;
+//             var hexPushConstants: [2]u64 align(16) = .{HexVkVertexBufferAddress, hexsDataVkDeviceAddress};
+            alignPtrCast(*u64, &hexPushConstants[0]).* = HexVkVertexBufferAddress;
+            alignPtrCast(*u64, &hexPushConstants[8]).* = hexsDataVkDeviceAddress;
+//             .{HexVkVertexBufferAddress, hexsDataVkDeviceAddress};
             Vulkan.vkCmdPushConstants(cmd, Hex.Hex_PipelineLayout, Vulkan.VK_SHADER_STAGE_VERTEX_BIT, 0, 16, &hexPushConstants);
 //             AoW4_clb_custom.bindDescriptorSetsLoop(&AoW4_archive);
             var descriptorSets: [3]Vulkan.VkDescriptorSet = undefined;
@@ -802,30 +822,40 @@ pub fn main() void
 //             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], 12, hexsCount, 0, 0, 0);
 
 
-            Vulkan.vkCmdBindPipeline(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines.PNUCT_Pipeline);
-            Vulkan.vkCmdBindDescriptorSets(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines.PNUCT_PipelineLayout, 0, 2, &descriptorSets, 0, null);
-            hexPushConstants[0] = AoW4_archive.meshesVkDeviceAddress+AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].vertexVkBufferOffset;
-            hexPushConstants[1] = resourceID.@"LushGrass_Temperate_[DIFF_DXT5].tga";
-            Vulkan.vkCmdPushConstants(cmd, Pipelines.PNUCT_PipelineLayout, Vulkan.VK_SHADER_STAGE_VERTEX_BIT, 0, 8, &hexPushConstants);
-            Vulkan.vkCmdPushConstants(cmd, Pipelines.PNUCT_PipelineLayout, Vulkan.VK_SHADER_STAGE_FRAGMENT_BIT, 8, 4, &hexPushConstants[1]);
+            Vulkan.vkCmdBindPipeline(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines.FernSolid_Pipeline);
+            Vulkan.vkCmdBindDescriptorSets(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines.FernSolid_PipelineLayout, 0, 2, &descriptorSets, 0, null);
+            alignPtrCast(*u64, &hexPushConstants[0]).* = AoW4_archive.meshesVkDeviceAddress+AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].vertexVkBufferOffset;
+            alignPtrCast(*u32, &hexPushConstants[8]).* = AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].verticesCount;
+//             alignPtrCast(*u16, &hexPushConstants[8]).* = 3179;
+            alignPtrCast(*u32, &hexPushConstants[12]).* = resourceID.@"LushGrass_Temperate_[DIFF_DXT5].tga";
+//             hexPushConstants[0] = AoW4_archive.meshesVkDeviceAddress+AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].vertexVkBufferOffset;
+//             hexPushConstants[1] = resourceID.@"LushGrass_Temperate_[DIFF_DXT5].tga";
+            Vulkan.vkCmdPushConstants(cmd, Pipelines.FernSolid_PipelineLayout, Vulkan.VK_SHADER_STAGE_VERTEX_BIT, 0, 12, &hexPushConstants);
+            Vulkan.vkCmdPushConstants(cmd, Pipelines.FernSolid_PipelineLayout, Vulkan.VK_SHADER_STAGE_FRAGMENT_BIT, 12, 4, &hexPushConstants[12]);
             Vulkan.vkCmdBindIndexBuffer(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshesVkBuffer, AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].indexVkBufferOffset, Vulkan.VK_INDEX_TYPE_UINT16);
-//             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], 3192*3, 1, 0, 0, 0);
-
-//             hexPushConstants[0] = AoW4_archive.meshesVkDeviceAddress+AoW4_archive.meshes[161].vertexVkBufferOffset;
-//             Vulkan.vkCmdPushConstants(cmd, AoW4.PNUCT_PipelineLayout, Vulkan.VK_SHADER_STAGE_VERTEX_BIT, 0, 8, &hexPushConstants);
-//             Vulkan.vkCmdBindIndexBuffer(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshesVkBuffer, AoW4_archive.meshes[161].indexVkBufferOffset, Vulkan.VK_INDEX_TYPE_UINT16);
-//             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], 282*3, 1, 0, 0, 0);
+            Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].indicesCount, 1, 0, 0, 0);
+//
+//             Vulkan.vkCmdBindPipeline(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines.FernTransparency_Pipeline);
+//             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].indicesCount, 1, 0, 0, 0);
 
 
-            Vulkan.vkCmdBindPipeline(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines.PNUCTP_Pipeline);
-            hexPushConstants[0] = AoW4_archive.meshesVkDeviceAddress+AoW4_archive.meshes[resourceID.@"Temperate_Forest_06_PineTrees"].vertexVkBufferOffset;
-            hexPushConstants[1] = resourceID.@"PineTrees_[DIFF_DXT5].tga";
-            Vulkan.vkCmdPushConstants(cmd, Pipelines.PNUCT_PipelineLayout, Vulkan.VK_SHADER_STAGE_VERTEX_BIT, 0, 8, &hexPushConstants);
-            Vulkan.vkCmdPushConstants(cmd, Pipelines.PNUCT_PipelineLayout, Vulkan.VK_SHADER_STAGE_FRAGMENT_BIT, 8, 4, &hexPushConstants[1]);
-
-            Vulkan.vkCmdBindIndexBuffer(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshesVkBuffer, AoW4_archive.meshes[resourceID.@"Temperate_Forest_06_PineTrees"].indexVkBufferOffset, Vulkan.VK_INDEX_TYPE_UINT16);
-            Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], 144*3, 1, 0, 0, 0);
-
+// //             hexPushConstants[0] = AoW4_archive.meshesVkDeviceAddress+AoW4_archive.meshes[161].vertexVkBufferOffset;
+// //             Vulkan.vkCmdPushConstants(cmd, AoW4.PNUCT_PipelineLayout, Vulkan.VK_SHADER_STAGE_VERTEX_BIT, 0, 8, &hexPushConstants);
+// //             Vulkan.vkCmdBindIndexBuffer(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshesVkBuffer, AoW4_archive.meshes[161].indexVkBufferOffset, Vulkan.VK_INDEX_TYPE_UINT16);
+// //             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], 282*3, 1, 0, 0, 0);
+//
+//
+//             Vulkan.vkCmdBindPipeline(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines.TreesSolid_Pipeline);
+// //             hexPushConstants[0] = AoW4_archive.meshesVkDeviceAddress+AoW4_archive.meshes[resourceID.@"Temperate_Forest_06_PineTrees"].vertexVkBufferOffset;
+// //             hexPushConstants[1] = resourceID.@"PineTrees_[DIFF_DXT5].tga";
+//             Vulkan.vkCmdPushConstants(cmd, Pipelines.FernSolid_PipelineLayout, Vulkan.VK_SHADER_STAGE_VERTEX_BIT, 0, 8, &hexPushConstants);
+//             Vulkan.vkCmdPushConstants(cmd, Pipelines.FernSolid_PipelineLayout, Vulkan.VK_SHADER_STAGE_FRAGMENT_BIT, 8, 4, &hexPushConstants[1]);
+//
+//             Vulkan.vkCmdBindIndexBuffer(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshesVkBuffer, AoW4_archive.meshes[resourceID.@"Temperate_Forest_06_PineTrees"].indexVkBufferOffset, Vulkan.VK_INDEX_TYPE_UINT16);
+// //             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshes[resourceID.@"Temperate_Forest_06_PineTrees"].indicesCount, 1, 0, 0, 0);
+//
+//             Vulkan.vkCmdBindPipeline(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines.PNUCTP_Pipeline);
+// //             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshes[resourceID.@"Temperate_Forest_06_PineTrees"].indicesCount, 1, 0, 0, 0);
 
             Vulkan.vkCmdEndRendering(VulkanGlobalState._commandBuffers[currentFrame]);
             VkImage.transitionImage(cmd, VulkanGlobalState._swapchainImages[swapchainImageIndex],

@@ -243,6 +243,7 @@ fn createVkDevice(stackMemoryPtr: [*]u8) void
         .features = Vulkan.VkPhysicalDeviceFeatures
         {
             .samplerAnisotropy = Vulkan.VK_TRUE,
+            .shaderInt64 = Vulkan.VK_TRUE,
         },
         .pNext = @ptrCast(&features12),
     };

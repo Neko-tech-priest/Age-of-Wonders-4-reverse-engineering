@@ -263,7 +263,6 @@ pub fn Create_Hex_Pipeline(texturesDescriptorSetLayout: Vulkan.VkDescriptorSetLa
 			.pName = "main",
 		}
 	};
-//
     const VertexInputState = Vulkan.VkPipelineVertexInputStateCreateInfo
     {
         .sType = Vulkan.VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
@@ -280,8 +279,6 @@ pub fn Create_Hex_Pipeline(texturesDescriptorSetLayout: Vulkan.VkDescriptorSetLa
 		.primitiveRestartEnable = Vulkan.VK_FALSE,
 	};
 	//VkPipelineTessellationStateCreateInfo TessellationState{};
-
-	//make viewport state from our stored viewport and scissor.
 	const ViewportState = Vulkan.VkPipelineViewportStateCreateInfo
 	{
 		.sType = Vulkan.VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,

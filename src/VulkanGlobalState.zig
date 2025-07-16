@@ -23,8 +23,8 @@ pub var _renderFences: [FRAME_OVERLAP]Vulkan.VkFence = undefined;
 
 pub var _surface: Vulkan.VkSurfaceKHR = undefined;
 pub var _swapchain: Vulkan.VkSwapchainKHR = undefined;
-pub var _swapchainImages: [4]Vulkan.VkImage = undefined;
-pub var _swapchainImageViews: [4]Vulkan.VkImageView = undefined;
+pub var _swapchainImages: [2]Vulkan.VkImage = undefined;
+pub var _swapchainImageViews: [2]Vulkan.VkImageView = undefined;
 pub var _swapchainImageFormat: c_uint = Vulkan.VK_FORMAT_B8G8R8A8_SRGB;
 pub var _swapchainImagesCount: u32 = 3;
 

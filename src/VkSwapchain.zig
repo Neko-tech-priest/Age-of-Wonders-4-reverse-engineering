@@ -76,7 +76,7 @@ pub fn createVkSwapchain() void
 		.format = Vulkan.VK_FORMAT_B8G8R8A8_SRGB,
 		.colorSpace = Vulkan.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
 	};
-	const presentMode: Vulkan.VkPresentModeKHR = Vulkan.VK_PRESENT_MODE_FIFO_RELAXED_KHR;
+	const presentMode: Vulkan.VkPresentModeKHR = Vulkan.VK_PRESENT_MODE_FIFO_KHR;//VK_PRESENT_MODE_FIFO_RELAXED_KHR
 	WindowGlobalState._windowExtent = capabilities.currentExtent;
 
 // VulkanGlobalState._swapchainImagesCount = capabilities.minImageCount;

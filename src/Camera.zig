@@ -148,7 +148,9 @@ pub noinline fn updateCameraBuffer(currentFrame: usize) void
 //  var cameraScale: algebra.mat4 = undefined;
 
 //  const cameraScale = math.matScaling(1.0, 1.0, 1.0);
-	const cameraRotate = Math.matRotationX(camera_rotate_x);
+    const cameraRotate = Math.matRotationX(camera_rotate_x);
+//     const cameraRotate = Math.matRotationY(camera_rotate_y);
+//     const cameraRotate = Math.matRotationZ(camera_rotate_z);
 	const cameraTranslate = Math.matTranslation(0+camera_translate_x, 0+camera_translate_y, 2+camera_translate_z);
 	camera.view = Math.mulMat(cameraRotate, cameraTranslate);
     camera.view = Math.mulMat(cameraTranslate, cameraRotate);

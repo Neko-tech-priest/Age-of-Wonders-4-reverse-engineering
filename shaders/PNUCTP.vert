@@ -29,7 +29,25 @@ layout(location = 0) out vec2 fragTexCoord;
 void main()
 {
     Vertex vertex = pushConstants.vertexBuffer.vertices[gl_VertexIndex];
-    gl_Position = vec4(vertex.position+vertex.position1, 1.0) * ubo.view * ubo.proj;
+//     mat4 rotatePos = mat4(
+//         1, 0, 0, ubo.view[0][3],
+//         0, 1, 0, ubo.view[1][3],
+//         1, 0, 1, ubo.view[2][3],
+//         0, 0, 0, 1
+//     );
+//     mat4 rotatePos = mat4(
+//         1, ubo.view[0][1], 0, 0,
+//         0, 1, 0, 0,
+//         1, 0, 1, 0,
+//         0, 0, 0, 1
+//     );
+    mat4 rotatePos = ubo.view;
+    rotatePos[0][3] = 0;
+    rotatePos[1][3] = 0;
+    rotatePos[2][3] = 0;
+//     vec3 offset_pos = vec3();
+//     gl_Position = vec4(vertex.position+vertex.position1, 1.0) * ubo.view * ubo.proj;
+    gl_Position = (rotatePos*vec4(vertex.position, 1.0) + (vec4(vertex.position1, 1.0))) * ubo.view * ubo.proj;
     fragTexCoord = vertex.UV;
 }
 

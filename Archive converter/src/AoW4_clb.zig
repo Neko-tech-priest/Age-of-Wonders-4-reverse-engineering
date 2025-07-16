@@ -75,40 +75,6 @@ pub const Archive = struct
         GlobalState.allocator.free(self.meshes[0..self.meshesCount]);
     }
 };
-pub const ArchiveCustom = struct
-{
-    const Texture = struct
-    {
-//         name: [*]u8,
-//         nameLen: u8,
-        image: Image.Image,
-    };
-    const Mesh = struct
-    {
-//         name: [*]u8,
-//         nameLen: u8,
-        vertexFormat: [16]u8,
-        verticesBuffer: [*]u8,
-        verticesBufferSize: u32,
-        vertexSize: u32,
-        verticesCount: u16,
-        indicesBuffer: [*]u8,
-        indicesBufferSize: u32,
-        indicesCount: u16,
-    };
-    const Model = struct
-    {
-        name: [*]u8,
-        nameLen: u8,
-        meshesCount: u8,
-    };
-    textures: [*]Texture,
-    texturesCount: u16,
-    meshes: [*]Mesh,
-    meshesCount: u16,
-    models: [*]Model,
-    modelsCount: u16,
-};
 const Material_ChunkData = struct
 {
     name: [*]u8,
@@ -678,6 +644,7 @@ fn readChunk_Mesh(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, fileBufferPtrItera
                 {
                     0x3d =>
                     {
+//                         print("offset: {x}\n", .{@intFromPtr(bufferPtrItr) - @intFromPtr(fileBuffer)});
                         const dataTable = readTableNear(bufferPtrItr);
                         {
                             const elementsCount: u32 = readFromPtr(u32, dataTable.dataAfterHeaderPtr + 1);
@@ -686,7 +653,7 @@ fn readChunk_Mesh(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, fileBufferPtrItera
                             bufferPtrItr = dataTable.dataAfterHeaderPtr + 9;
                             const dataSize: u32 = readFromPtr(u32, bufferPtrItr+4);
                             const dataCompressedSize: u32 = readFromPtr(u32, bufferPtrItr+8);
-                            print("dataOffset: {x}\n", .{dataOffset});
+//                             print("dataOffset: {x}\n", .{dataOffset});
 //                             print("dataSize: {d}\ndataCompressedSize: {d}\n", .{dataSize, dataCompressedSize});
 //                             stdout.print("indicesCount: {d}\nindicesSize: {d}\n", .{elementsCount, dataSize}) catch unreachable;
 //                             mesh.indicesBuffer = allocInFixedBuffer(memoryBufferItr, dataSize, CustomMem.SIMDalignment);//(allocator.alignedAlloc(u8, CustomMem.alingment, dataSize) catch unreachable).ptr;
@@ -709,10 +676,11 @@ fn readChunk_Mesh(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, fileBufferPtrItera
                         const dataTable = readTableNear(bufferPtrItr);
                         {
                             var vertexFormat: [16]u8 align(16) = @splat(0);
-                            var vertexTypeString: [16]u8 = @splat(0);
+                            var vertexTypeString: [16]u8 align(16) = @splat(0);
+                            var vertexSize: u64 = undefined;
                             const vertexTypeTable = readTableNear(dataTable.dataAfterHeaderPtr);
                             {
-//                                 const vertexSize: u64 = vertexTypeTable.dataAfterHeaderPtr[0];
+                                vertexSize = vertexTypeTable.dataAfterHeaderPtr[0];
                                 const vertexAttributesCount: u64 = vertexTypeTable.dataAfterHeaderPtr[4]<<1;
                                 bufferPtrItr = vertexTypeTable.dataAfterHeaderPtr+12;
                                 var indexVertexAttributesCount: u64 = 0;
@@ -795,6 +763,46 @@ fn readChunk_Mesh(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, fileBufferPtrItera
                             {
                                 memcpy(mesh.verticesBuffer, dataBlockPtr+dataOffset, dataSize);
                             }
+//                             AoS => SoA
+                            const SoA_verticesBuffer = PageAllocator.map(dataSize).ptr;
+                            var verticesBufferPtr = SoA_verticesBuffer;
+                            var attributeOffset: u64 = 0;
+                            for(0..8) |elementTypeIndex|
+                            {
+                                const attributeType = vertexTypeString[elementTypeIndex*2];
+                                var attributeSize: u64 = 0;
+                                if(attributeType == 0)
+                                    break;
+                                switch(attributeType)
+                                {
+                                    'P' =>
+                                    {
+                                        attributeSize = 12;
+                                    },
+                                    'N' =>
+                                    {
+                                        attributeSize = 12;
+                                    },
+                                    'U' =>
+                                    {
+                                        attributeSize = 8;
+                                    },
+                                    else =>
+                                    {
+                                        break;
+                                    }
+                                }
+                                print("verticesBufferOffset: {d}\n", .{@intFromPtr(verticesBufferPtr) - @intFromPtr(SoA_verticesBuffer)});
+                                print("attributeOffset: {d}\n", .{attributeOffset});
+                                for(0..elementsCount) |elementIndex|
+                                {
+                                    memcpy(verticesBufferPtr, mesh.verticesBuffer+vertexSize*elementIndex+attributeOffset, attributeSize);
+                                    verticesBufferPtr+=attributeSize;
+                                }
+                                attributeOffset+=attributeSize;
+                            }
+                            PageAllocator.unmap(mesh.verticesBuffer[0..dataSize]);
+                            mesh.verticesBuffer = SoA_verticesBuffer;
                         }
                     },
                     else =>
@@ -1352,7 +1360,8 @@ pub fn convertArchives(comptime archivesPaths: []const[*:0]const u8, srcDirfd: f
         {
             ptrOnValue(u32, stackBufferPtr).* = mesh.indicesBufferSize;
             ptrOnValue(u32, stackBufferPtr+4).* = mesh.verticesBufferSize;
-            stackBufferPtr+=8;
+            ptrOnValue(u16, stackBufferPtr+8).* = mesh.verticesCount;
+            stackBufferPtr+=10;
         }
     }
 //     exit(0);
