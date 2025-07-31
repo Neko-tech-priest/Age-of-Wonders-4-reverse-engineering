@@ -1,6 +1,5 @@
 const std = @import("std");
-const print = std.debug.print;
-const exit = std.process.exit;
+// const exit = std.process.exit;
 
 const SDL = @import("SDL3.zig");
 const Vulkan = @import("Vulkan.zig");
@@ -12,13 +11,17 @@ const VK_CHECK = VulkanGlobalState.VK_CHECK;
 const WindowGlobalState = @import("WindowGlobalState.zig");
 
 const CustomMem = @import("CustomMem.zig");
+const CustomFS = @import("CustomFS.zig");
+const CustomThreads = @import("CustomThreads.zig");
+const exit = CustomThreads.exit;
 
 fn debugCallback(messageSeverity: Vulkan.VkDebugUtilsMessageSeverityFlagBitsEXT, messageType: Vulkan.VkDebugUtilsMessageTypeFlagsEXT, pCallbackData: [*c]const Vulkan.VkDebugUtilsMessengerCallbackDataEXT, pUserData: ?*anyopaque) callconv(.C) Vulkan.VkBool32
 {
     _ = messageSeverity;
     _ = messageType;
     _ = pUserData;
-    print("validation layer: {s}\n", .{pCallbackData.*.pMessage});
+    const stdout = GlobalState.stdout;
+    stdout.print("validation layer: {s}\n", .{pCallbackData.*.pMessage}) catch unreachable;
     return Vulkan.VK_FALSE;
 }
 fn createVkInstance(stackMemoryPtr: [*]u8) void
@@ -46,8 +49,11 @@ fn createVkInstance(stackMemoryPtr: [*]u8) void
             //         std.debug.assert(layerFound);
             if (!layerFound)
             {
-                print("validation layers requested, but not available!\n", .{});
-                exit(0);
+                const string = "validation layers requested, but not available!\n";
+                _ = CustomFS.write(1, string, string.len);
+//                 @panic("validation layers requested, but not available!\n");
+//                 @trap();
+                exit();
             }
         }
     }
@@ -103,6 +109,7 @@ fn createVkInstance(stackMemoryPtr: [*]u8) void
 }
 fn createVkDevice(stackMemoryPtr: [*]u8) void
 {
+    const stdout = GlobalState.stdout;
     const deviceExtensions = [_][*:0]const u8
     {
         "VK_KHR_swapchain",
@@ -116,7 +123,7 @@ fn createVkDevice(stackMemoryPtr: [*]u8) void
     //     if (physicaldeviceCount == 0)
     //     {
     //         print("failed to find GPUs with Vulkan support!\n", .{});
-    //         exit(0);
+    //         exit();
     //     }
     var physicalDevices: [2]Vulkan.VkPhysicalDevice = undefined;
     _ = (Vulkan.vkEnumeratePhysicalDevices(VulkanGlobalState._instance, &physicaldeviceCount, @ptrCast(&physicalDevices)));
@@ -193,14 +200,15 @@ fn createVkDevice(stackMemoryPtr: [*]u8) void
         }
         VulkanGlobalState._physicalDevice = physicalDevice;
 //         print("gpu: {s}\n", .{VulkanGlobalState._deviceProperties.deviceName});
-        print("gpu: {s}\n", .{std.mem.sliceTo(&VulkanGlobalState._deviceProperties.deviceName, 0)});
+        stdout.print("gpu: {s}\n", .{std.mem.sliceTo(&VulkanGlobalState._deviceProperties.deviceName, 0)}) catch unreachable;
         if(VulkanGlobalState._deviceProperties.deviceType == Vulkan.VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
             break;
     }
     if(VulkanGlobalState._physicalDevice == null)
     {
-        print("failed to find suidable device!\n", .{});
-        exit(0);
+        const string = "failed to find suidable device!\n";
+        _ = CustomFS.write(1, string, string.len);
+        exit();
     }
     // завантаження певних глобальних відомостей про пристрій
     Vulkan.vkGetPhysicalDeviceMemoryProperties(VulkanGlobalState._physicalDevice, &VulkanGlobalState._memoryProperties);
@@ -247,26 +255,6 @@ fn createVkDevice(stackMemoryPtr: [*]u8) void
         },
         .pNext = @ptrCast(&features12),
     };
-    //     var PhysicalDeviceDynamicRenderingFeaturesKHR = Vulkan.VkPhysicalDeviceDynamicRenderingFeaturesKHR
-    //     {
-    //         .sType = Vulkan.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR,
-    //         .dynamicRendering = Vulkan.VK_TRUE,
-    //     };
-    //     VkPD_Features2.pNext = @ptrCast(&PhysicalDeviceDynamicRenderingFeaturesKHR);
-    //     var PhysicalDeviceVulkan12Features = Vulkan.VkPhysicalDeviceVulkan12Features
-    //     {
-    //         .sType = Vulkan.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
-    //         .shaderSampledImageArrayNonUniformIndexing = Vulkan.VK_TRUE,
-    //         //     .descriptorIndexing = Vulkan.VK_TRUE,
-    //         .runtimeDescriptorArray = Vulkan.VK_TRUE,
-    //     };
-    //     PhysicalDeviceDynamicRenderingFeaturesKHR.pNext = @ptrCast(&PhysicalDeviceVulkan12Features);
-    //     var VkPhysicalDeviceVulkan13Features = Vulkan.VkPhysicalDeviceVulkan13Features
-    //     {
-    //         .sType = Vulkan.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES,
-    //         .synchronization2 = Vulkan.VK_TRUE,
-    //     };
-    //     PhysicalDeviceVulkan12Features.pNext = @ptrCast(&VkPhysicalDeviceVulkan13Features);
     const deviceCreateInfo = Vulkan.VkDeviceCreateInfo
     {
         .sType = Vulkan.VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -292,8 +280,9 @@ pub fn initBaseVulkan() void
     //         VK_CHECK(Vulkan.vkCreateDebugUtilsMessengerEXT(VulkanGlobalState._instance, &debugCreateInfo, 0, &VulkanGlobalState._debugMessenger));
     if (!SDL.SDL_Vulkan_CreateSurface(WindowGlobalState._window, @ptrCast(VulkanGlobalState._instance), null, @ptrCast(&VulkanGlobalState._surface)))
     {
-        print("failed to create window surface!\n", .{});
-        exit(0);
+        const string = "failed to create window surface!\n";
+        _ = CustomFS.write(1, string, string.len);
+        exit();
     }
     createVkDevice(&stackMemory);
     VulkanFunctionsLoader.loadDeviceFunctions();
@@ -409,8 +398,8 @@ pub fn createTextureSampler() void
 //     .addressModeV = Vulkan.VK_SAMPLER_ADDRESS_MODE_REPEAT,
 //     .addressModeW = Vulkan.VK_SAMPLER_ADDRESS_MODE_REPEAT,
 //      .mipLodBias
-        .anisotropyEnable = Vulkan.VK_TRUE,
-        .maxAnisotropy = VulkanGlobalState._deviceProperties.limits.maxSamplerAnisotropy,
+//         .anisotropyEnable = Vulkan.VK_TRUE,
+//         .maxAnisotropy = VulkanGlobalState._deviceProperties.limits.maxSamplerAnisotropy,
 		.compareEnable = Vulkan.VK_FALSE,
 		.compareOp = Vulkan.VK_COMPARE_OP_NEVER,//VK_COMPARE_OP_ALWAYS
 		.minLod = 0.0,

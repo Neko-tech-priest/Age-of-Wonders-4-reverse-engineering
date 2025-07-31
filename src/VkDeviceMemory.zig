@@ -1,10 +1,10 @@
 const std = @import("std");
-const c = std.c;
-const print = std.debug.print;
-
 // const Vulkan = @import("Vulkan.zig");
 const Vulkan = @import("Vulkan.zig");
 
+const CustomFS = @import("CustomFS.zig");
+const CustomThreads = @import("CustomThreads.zig");
+const exit = CustomThreads.exit;
 const VulkanGlobalState = @import("VulkanGlobalState.zig");
 const VK_CHECK = VulkanGlobalState.VK_CHECK;
 
@@ -17,8 +17,9 @@ pub fn findMemoryType(propertyFlags: Vulkan.VkMemoryPropertyFlags) u32
 			return @intCast(i);
 		i+=1;
 	}
-	print("failed to find suitable memory type!\n", .{});
-	c.exit(-1);
+	const string = "failed to find suitable memory type!\n";
+    _ = CustomFS.write(1, string, string.len);
+	exit();
 }
 pub fn createVkDeviceMemory(memRequirements: Vulkan.VkMemoryRequirements, propertyFlags: Vulkan.VkMemoryPropertyFlags, deviceMemory: *Vulkan.VkDeviceMemory) void
 {
@@ -45,6 +46,7 @@ pub fn createVkDeviceMemory(memRequirements: Vulkan.VkMemoryRequirements, proper
 		}
 		i+=1;
 	}
-	print("failed to find suitable memory type!\n", .{});
-	std.c.exit(-1);
+	const string = "failed to find suitable memory type!\n";
+    _ = CustomFS.write(1, string, string.len);
+	exit();
 }

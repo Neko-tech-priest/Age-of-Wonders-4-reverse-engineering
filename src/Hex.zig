@@ -1,8 +1,6 @@
 const std = @import("std");
 const mem = std.mem;
-const print = std.debug.print;
 
-// const Vulkan = @import("Vulkan.zig");
 const Vulkan = @import("Vulkan.zig");
 
 const VulkanGlobalState = @import("VulkanGlobalState.zig");
@@ -13,7 +11,6 @@ const Texture = @import("Texture.zig").Texture;
 
 const Camera = @import("Camera.zig");
 
-// const clb_custom = @import("clb_custom.zig");
 // const AoW4_clb_custom = @import("AoW4_clb_custom.zig");
 
 pub const HexData = struct
@@ -325,7 +322,7 @@ pub fn Create_Hex_Pipeline(texturesDescriptorSetLayout: Vulkan.VkDescriptorSetLa
 
 		.depthTestEnable = Vulkan.VK_TRUE,
 		.depthWriteEnable = Vulkan.VK_TRUE,
-		.depthCompareOp = Vulkan.VK_COMPARE_OP_LESS,//VK_COMPARE_OP_GREATER
+		.depthCompareOp = Vulkan.VK_COMPARE_OP_GREATER,//VK_COMPARE_OP_GREATER
 //         .depthBoundsTestEnable = Vulkan.VK_TRUE,
 //         .minDepthBounds = 0.0, // Optional
 //         .maxDepthBounds = 1.0, // Optional

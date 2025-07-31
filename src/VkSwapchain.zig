@@ -1,10 +1,5 @@
 const std = @import("std");
-const mem = std.mem;
-const print = std.debug.print;
-const exit = std.process.exit;
-// const SDL = @import("SDL.zig");
 
-// const Vulkan = @import("Vulkan.zig");
 const Vulkan = @import("Vulkan.zig");
 
 const GlobalState = @import("GlobalState.zig");
@@ -15,6 +10,8 @@ const WindowGlobalState = @import("WindowGlobalState.zig");
 const VkDeviceMemory = @import("VkDeviceMemory.zig");
 const VkImage = @import("VkImage.zig");
 
+const CustomFS = @import("CustomFS.zig");
+const exit = @import("CustomThreads.zig").exit;
 pub fn createVkSwapchain() void
 {
 	var capabilities :Vulkan.VkSurfaceCapabilitiesKHR = undefined;
@@ -49,8 +46,9 @@ pub fn createVkSwapchain() void
 	}
 	if(!formatFound)
 	{
-		print("swapchain format not found!\n", .{});
-		exit(0);
+        const string = "swapchain format not found!\n";
+        _ = CustomFS.write(1, string, string.len);
+		exit();
 	}
 //     var presentModeFound: bool = false;
 //     for(presentModes[0..presentModeCount]) |presentMode|

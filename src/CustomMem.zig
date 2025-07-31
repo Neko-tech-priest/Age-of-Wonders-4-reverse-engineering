@@ -41,6 +41,10 @@ pub inline fn u64Tof32(value: u64) f32
 {
     return @floatFromInt(@as(i32, @intCast(value)));
 }
+pub inline fn i64Tof32(value: i64) f32
+{
+    return @floatFromInt(@as(i32, @intCast(value)));
+}
 pub inline fn i32Tof32(value: i32) f32
 {
     return @floatFromInt(value);
@@ -75,6 +79,7 @@ pub inline fn memcpy(noalias dst: [*]u8, noalias src: [*]const u8, sizeIn: u64) 
     while(offset < sizeIn) : (offset+=SIMDalignment)
     {
         @as(*align(1) @Vector(SIMDalignment64, u64), @ptrCast(@alignCast(dst+offset))).* = @as(*const align(1) @Vector(SIMDalignment64, u64), @ptrCast((src+offset))).*;
+//         (dst+offset)[0..SIMDalignment].* = (src+offset)[0..SIMDalignment].*;
     }
 }
 // pub fn memcpyNoalign(noalias dst: [*]u8, noalias src: [*]const u8, sizeIn: u64) void

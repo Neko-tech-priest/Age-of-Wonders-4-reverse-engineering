@@ -8,11 +8,12 @@ const posix = std.posix;
 const windows = std.os.windows;
 const kernel32 = windows.kernel32;
 const ntdll = windows.ntdll;
-const print = std.debug.print;
+// const print = std.debug.print;
 const exit = std.process.exit;
 
 const CustomMem = @import("CustomMem.zig");
 
+const GlobalState = @import("GlobalState.zig");
 const fd_t = std.posix.fd_t;
 
 // pub const _close = switch (native_os) {
@@ -78,6 +79,7 @@ pub const FILE_STAT_INFORMATION = extern struct
 };
 pub fn fstat(fd: fd_t, stat_buf: *linux.Stat) usize_NTSTATUS
 {
+//     const stdout = GlobalState.stdout;
     switch (native_os)
     {
         .linux => return linux.fstat(fd, stat_buf),
@@ -86,7 +88,7 @@ pub fn fstat(fd: fd_t, stat_buf: *linux.Stat) usize_NTSTATUS
             var IoStatusBlock: windows.IO_STATUS_BLOCK = undefined;
             var StatInformation: FILE_STAT_INFORMATION = undefined;
             const rc = ntdll.NtQueryInformationFile(fd, &IoStatusBlock, &StatInformation, @sizeOf(FILE_STAT_INFORMATION), .FileStatInformation);
-            print("NtQueryInformationFile: {d}\n", .{rc});
+//             stdout.print("NtQueryInformationFile: {d}\n", .{rc}) catch unreachable;
             stat_buf.* = std.mem.zeroes(linux.Stat);
             stat_buf.size = StatInformation.EndOfFile;
             stat_buf.atim.sec = StatInformation.LastAccessTime;
@@ -164,7 +166,7 @@ pub fn open(path: [*:0]const u8, comptime flags: linux.O) fd_t
                 true => windows.FILE_DIRECTORY_FILE | windows.FILE_SYNCHRONOUS_IO_NONALERT | windows.FILE_OPEN_FOR_BACKUP_INTENT,
                 false => windows.FILE_NON_DIRECTORY_FILE | windows.FILE_SYNCHRONOUS_IO_NONALERT | windows.FILE_OPEN_FOR_BACKUP_INTENT,
             };
-            const rc = ntdll.NtCreateFile(
+            _ = ntdll.NtCreateFile(
                 &FileHandle,
                 DesiredAccess,
                 &ObjectAttributes,
@@ -177,7 +179,7 @@ pub fn open(path: [*:0]const u8, comptime flags: linux.O) fd_t
                 null,
                 0,
             );
-            print("NtCreateFile: {d}\n", .{rc});
+//             print("NtCreateFile: {d}\n", .{rc});
             return FileHandle;
         },
         else => @compileError("unsupported target")
@@ -239,7 +241,7 @@ pub fn openat(dirfd: fd_t, path: [*:0]const u8, comptime flags: linux.O) fd_t
                 true => windows.FILE_DIRECTORY_FILE | windows.FILE_SYNCHRONOUS_IO_NONALERT | windows.FILE_OPEN_FOR_BACKUP_INTENT,
                 false => windows.FILE_NON_DIRECTORY_FILE | windows.FILE_SYNCHRONOUS_IO_NONALERT | windows.FILE_OPEN_FOR_BACKUP_INTENT,
             };
-            const rc = ntdll.NtCreateFile(
+            _ = ntdll.NtCreateFile(
                 &FileHandle,
                 DesiredAccess,
                 &ObjectAttributes,
@@ -252,7 +254,7 @@ pub fn openat(dirfd: fd_t, path: [*:0]const u8, comptime flags: linux.O) fd_t
                 null,
                 0,
             );
-            print("NtCreateFile: {d}\n", .{rc});
+//             print("NtCreateFile: {d}\n", .{rc});
             return FileHandle;
         },
         else => @compileError("unsupported target")
@@ -296,7 +298,7 @@ pub extern "ntdll" fn NtWriteFile(
     ByteOffset: ?*windows.LARGE_INTEGER,
     Key: ?*windows.ULONG,
 ) callconv(.winapi) windows.NTSTATUS;
-pub fn write(fd: fd_t, buf: [*]u8, count: usize) usize_NTSTATUS
+pub fn write(fd: fd_t, buf: [*]const u8, count: usize) usize_NTSTATUS
 {
     switch (native_os)
     {

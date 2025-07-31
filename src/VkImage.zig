@@ -1,12 +1,9 @@
 const std = @import("std");
-const print = std.debug.print;
 
 const CustomMem = @import("CustomMem.zig");
 const memcpy = CustomMem.memcpy;
 const memcpyDstAlign = CustomMem.memcpyDstAlign;
 
-// const GlobalState = @import("GlobalState.zig");
-// const Vulkan = @import("Vulkan.zig");
 const Vulkan = @import("Vulkan.zig");
 
 const VulkanGlobalState = @import("VulkanGlobalState.zig");

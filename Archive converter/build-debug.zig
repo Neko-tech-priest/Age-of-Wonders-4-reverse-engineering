@@ -71,7 +71,7 @@ pub fn main() void
     if(pid == 0)
     {
         const zig = "/bin/zig";
-        const execveCompileFlags: [*:null]const ?[*:0]const u8 = &.{zig, "build-exe", "src/ArchiveConverter.zig","--global-cache-dir","/tmp/.zig-cache","--cache-dir",".zig-cache-debug","-L","/usr/lib","-search_dylibs_only","-fno-llvm","-fstrip","-lc","-llz4",null};
+        const execveCompileFlags: [*:null]const ?[*:0]const u8 = &.{zig, "build-exe", "src/ArchiveConverter.zig","--global-cache-dir","/tmp/.zig-cache x86_64_v3","--cache-dir",".zig-cache-debug","-target","x86_64-linux-gnu","-mcpu=x86_64_v3","-L","/usr/lib","-search_dylibs_only","-fno-llvm","-fstrip","-lc","-llz4",null};
         _ = linux.execve(zig, execveCompileFlags, @ptrCast(std.os.environ));
     }
     var status: u32 = undefined;

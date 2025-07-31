@@ -1,18 +1,11 @@
 const std = @import("std");
-const mem = std.mem;
-const c = std.c;
-const print = std.debug.print;
-const exit = std.process.exit;
 
-// extern fn memcpy(noalias dst: [*]u8, noalias src: [*]const u8, sizeIn: u64) void;
 const CustomMem = @import("CustomMem.zig");
+const readFromPtr = CustomMem.readFromPtr;
 const memcpy = CustomMem.memcpy;
 const memcpyDstAlign = CustomMem.memcpyDstAlign;
-// const memcpyDstAlign8 = customMem.memcpyDstAlign8;
-// const memcpy = customMem.memcpy;
 
 const GlobalState = @import("GlobalState.zig");
-// const Vulkan = @import("Vulkan.zig");
 const Vulkan = @import("Vulkan.zig");
 
 const VulkanGlobalState = @import("VulkanGlobalState.zig");
@@ -34,7 +27,6 @@ pub fn createVkBuffer(size: usize, usage:Vulkan.VkBufferUsageFlags, buffer: *Vul
 }
 pub fn createVkBuffer__VkDeviceMemory__HV_DL(usage: Vulkan.VkBufferUsageFlags, size: u32, vkBuffer: *Vulkan.VkBuffer, deviceMemory: *Vulkan.VkDeviceMemory) void
 {
-// = deviceMemory;
 	var sizeDeviceMemory: usize = 0;
 	var memRequirements: Vulkan.VkMemoryRequirements = undefined;
 	createVkBuffer(size, usage, vkBuffer);
@@ -156,7 +148,7 @@ pub fn createVkBuffer__VkDeviceMemory__VkDeviceAddress(usage: Vulkan.VkBufferUsa
     createVkBuffer(sizeDeviceMemory, Vulkan.VK_BUFFER_USAGE_TRANSFER_SRC_BIT, &stagingBuffer);
     VK_CHECK(Vulkan.vkBindBufferMemory(VulkanGlobalState._device, stagingBuffer, stagingDeviceMemory, 0));
 
-    memoryTypeIndex = VkDeviceMemory.findMemoryType(Vulkan.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    memoryTypeIndex = VkDeviceMemory.findMemoryType(Vulkan.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | Vulkan.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     allocInfo.memoryTypeIndex = memoryTypeIndex;
     VK_CHECK(Vulkan.vkAllocateMemory(VulkanGlobalState._device, &allocInfo, null, vkDeviceMemory));
     createVkBuffer(sizeDeviceMemory, Vulkan.VK_BUFFER_USAGE_TRANSFER_DST_BIT, &dstBuffer);
@@ -216,7 +208,7 @@ pub fn createVkBuffers__VkDeviceMemory_AoS(usage: Vulkan.VkBufferUsageFlags, src
 //     const buffers_full_sizes: [*]u64 = (globalState.arenaAllocator.alloc(u64, numBuffers) catch unreachable).ptr;
     for(0..numBuffers) |bufferIndex|
     {
-        createVkBuffer(mem.bytesToValue(u32, srcStructArray+srcStructSize*bufferIndex+sizeOffset), usage, @as(*Vulkan.VkBuffer, @ptrCast(@alignCast(VkBufferStructArray+VkBufferStructSize*bufferIndex))));
+        createVkBuffer(readFromPtr(u32, srcStructArray+srcStructSize*bufferIndex+sizeOffset), usage, @as(*Vulkan.VkBuffer, @ptrCast(@alignCast(VkBufferStructArray+VkBufferStructSize*bufferIndex))));
         var memRequirements: Vulkan.VkMemoryRequirements = undefined;
         Vulkan.vkGetBufferMemoryRequirements(VulkanGlobalState._device, @as(*Vulkan.VkBuffer, @ptrCast(@alignCast(VkBufferStructArray+VkBufferStructSize*bufferIndex))).*, &memRequirements);
 

@@ -1,7 +1,10 @@
 const std = @import("std");
-const print = std.debug.print;
+// const print = std.debug.print;
 
 const Vulkan = @import("Vulkan.zig");
+const GlobalState = @import("GlobalState.zig");
+const CustomThreads = @import("CustomThreads.zig");
+const exit = CustomThreads.exit;
 
 pub const enableValidationLayers: bool = std.debug.runtime_safety;// std.debug.runtime_safety
 
@@ -26,7 +29,7 @@ pub var _swapchain: Vulkan.VkSwapchainKHR = undefined;
 pub var _swapchainImages: [2]Vulkan.VkImage = undefined;
 pub var _swapchainImageViews: [2]Vulkan.VkImageView = undefined;
 pub var _swapchainImageFormat: c_uint = Vulkan.VK_FORMAT_B8G8R8A8_SRGB;
-pub var _swapchainImagesCount: u32 = 3;
+pub var _swapchainImagesCount: u32 = 2;
 
 pub const _depthFormat: Vulkan.VkFormat = Vulkan.VK_FORMAT_D32_SFLOAT;
 pub var _depthImage: Vulkan.VkImage = undefined;
@@ -47,9 +50,9 @@ pub fn VK_CHECK(err: Vulkan.VkResult) void
     {
         if (err != 0)
         {
-            print("Detected Vulkan error: {d}\n", .{err});
-            // print("{s}{d}\n", .{VK_CHECK_string, err});
-            std.process.exit(0);
+            const stdout = GlobalState.stdout;
+            stdout.print("Detected Vulkan error: {d}\n", .{err}) catch unreachable;
+            exit();
         }
     }
 }

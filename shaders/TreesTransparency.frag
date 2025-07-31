@@ -11,7 +11,7 @@ layout(set = 1, binding = 1) uniform sampler generalSampler;
 
 layout(push_constant) uniform constants
 {
-    layout(offset = 12+8)uint textureIndex;
+    layout(offset = 12)uint textureIndex;
 }
 pushConstants;
 
@@ -25,10 +25,9 @@ void main()
     color = texture(sampler2D(diffuseTextures[pushConstants.textureIndex], generalSampler), fragTexCoord).rgba;
     if(color.a == 0.0)
         discard;
-//     if(color.a == 1.0)
-//         discard;
+    //     if(color.a == 1.0)
+    //         discard;
     float diff = min(max(dot(normal, SunDirection), 0.0), 1.0);
     color.rgb *= diff;
     outColor = vec4(color);
-//     outColor = vec4(color.grba);
 }

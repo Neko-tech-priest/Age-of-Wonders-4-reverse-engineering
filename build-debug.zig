@@ -72,21 +72,21 @@ pub fn main() void
     _ = linux.unlink("src/Vulkan.zig");
     _ = linux.symlinkat("Vulkan_Linux.zig", src_fd, "Vulkan.zig");
     _ = linux.close(src_fd);
-    const TARGET = "main-linux";
+//     _ = linux.symlink("src/Vulkan_Linux.zig", "src/Vulkan.zig");
     const pid: i32 = @intCast(linux.fork());
     if(pid == 0)
     {
         const zig = "/bin/zig";
-        const execveCompileFlags: [*:null]const ?[*:0]const u8 = &.{zig, "build-exe", "src/main.zig", "--name", TARGET,"--global-cache-dir","/tmp/.zig-cache-linux","--cache-dir",".zig-cache-linux","-target","x86_64-linux-gnu","-mcpu=x86_64_v3","-L","/usr/lib","-search_dylibs_only","-OReleaseSmall","-fstrip","-femit-asm","-lc","-lSDL3",null};
+        const execveCompileFlags: [*:null]const ?[*:0]const u8 = &.{zig, "build-exe", "src/main.zig","--global-cache-dir","/tmp/.zig-cache-debug","--cache-dir",".zig-cache-debug","-L","/usr/lib","-L","/lib64","-search_dylibs_only","-fstrip","-fno-ubsan-rt","-fno-llvm","-lc","-lSDL3",null};
         _ = linux.execve(zig, execveCompileFlags, @ptrCast(std.os.environ));
     }
     var status: u32 = undefined;
     _ = linux.waitpid(-1, &status, 0);
-    _ = linux.unlink("main-linux.o");
     var timespec2: linux.timespec = undefined;
     _ = linux.clock_gettime(linux.CLOCK.REALTIME, &timespec2);
     const time: isize = (timespec2.sec-timespec1.sec)*1000 + (@as(i64, @intCast(@as(u64, @intCast(timespec2.nsec))/1000000)) - @as(i64, @intCast(@as(u64, @intCast(timespec1.nsec))/1000000)));
     stdout.print("time: {d} ms\n", .{time}) catch unreachable;
-//     const launchExeCommand: [*:null]const ?[*:0]const u8 = &.{TARGET, null};
-//     _ = linux.execve(TARGET, launchExeCommand, @ptrCast(std.os.environ));
+    const targetName = "main";
+    const launchExeCommand: [*:null]const ?[*:0]const u8 = &.{targetName, null};
+    _ = linux.execve(targetName, launchExeCommand, @ptrCast(std.os.environ));
 }

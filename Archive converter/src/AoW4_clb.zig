@@ -62,13 +62,13 @@ pub const Archive = struct
         for(self.textures[0..self.texturesCount]) |texture|
         {
 //             GlobalState.allocator.free(texture.name[0..texture.nameLen]);
-            PageAllocator.unmap(texture.image.data[0..texture.image.size]);
+            PageAllocator.unmap(texture.image.data, texture.image.size);
 //              textures[i]
         }
         for(self.meshes[0..self.meshesCount]) |mesh|
         {
-            PageAllocator.unmap(mesh.verticesBuffer[0..mesh.verticesBufferSize]);
-            PageAllocator.unmap(mesh.indicesBuffer[0..mesh.indicesBufferSize]);
+            PageAllocator.unmap(mesh.verticesBuffer, mesh.verticesBufferSize);
+            PageAllocator.unmap(mesh.indicesBuffer, mesh.indicesBufferSize);
             //              textures[i]
         }
         GlobalState.allocator.free(self.textures[0..self.texturesCount]);
@@ -584,7 +584,7 @@ fn readChunk_Texture(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, bufferPtrItrIn:
                 texture_size += sizes[i];
             }
 //             texture.image.data = CustomMem.allocInFixedBuffer(memoryBufferItr, texture_size, CustomMem.SIMDalignment);
-            texture.image.data = PageAllocator.map(texture_size).ptr;
+            texture.image.data = PageAllocator.map(texture_size);
 //             PageAllocator.map
             texture_size = 0;
             for(0..mipmapsHeaderOffsetsTable.tablesCount) |i|
@@ -657,7 +657,7 @@ fn readChunk_Mesh(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, fileBufferPtrItera
 //                             print("dataSize: {d}\ndataCompressedSize: {d}\n", .{dataSize, dataCompressedSize});
 //                             stdout.print("indicesCount: {d}\nindicesSize: {d}\n", .{elementsCount, dataSize}) catch unreachable;
 //                             mesh.indicesBuffer = allocInFixedBuffer(memoryBufferItr, dataSize, CustomMem.SIMDalignment);//(allocator.alignedAlloc(u8, CustomMem.alingment, dataSize) catch unreachable).ptr;
-                            mesh.indicesBuffer = PageAllocator.map(dataSize).ptr;
+                            mesh.indicesBuffer = PageAllocator.map(dataSize);
                             mesh.indicesBufferSize = dataSize;
                             mesh.indicesCount = @intCast(elementsCount);
                             if(dataCompressedSize != dataSize)
@@ -676,7 +676,7 @@ fn readChunk_Mesh(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, fileBufferPtrItera
                         const dataTable = readTableNear(bufferPtrItr);
                         {
                             var vertexFormat: [16]u8 align(16) = @splat(0);
-                            var vertexTypeString: [16]u8 align(16) = @splat(0);
+//                             var vertexTypeString: [16]u8 align(16) = @splat(0);
                             var vertexSize: u64 = undefined;
                             const vertexTypeTable = readTableNear(dataTable.dataAfterHeaderPtr);
                             {
@@ -693,39 +693,39 @@ fn readChunk_Mesh(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, fileBufferPtrItera
                                     {
                                         0x10 =>
                                         {
-                                            vertexTypeString[indexVertexAttributesCount] = 'P';
+//                                             vertexTypeString[indexVertexAttributesCount] = 'P';
                                         },
                                         0x40 =>
                                         {
-                                            vertexTypeString[indexVertexAttributesCount] = 'N';
+//                                             vertexTypeString[indexVertexAttributesCount] = 'N';
                                         },
                                         0x30 =>
                                         {
-                                            vertexTypeString[indexVertexAttributesCount] = 'U';
+//                                             vertexTypeString[indexVertexAttributesCount] = 'U';
                                         },
                                         0x20 =>
                                         {
-                                            vertexTypeString[indexVertexAttributesCount] = 'C';
+//                                             vertexTypeString[indexVertexAttributesCount] = 'C';
                                         },
                                         0x70 =>
                                         {
-                                            vertexTypeString[indexVertexAttributesCount] = 'T';
+//                                             vertexTypeString[indexVertexAttributesCount] = 'T';
                                         },
                                         0x11 =>
                                         {
-                                            vertexTypeString[indexVertexAttributesCount] = 'P';
+//                                             vertexTypeString[indexVertexAttributesCount] = 'P';
                                         },
                                         0x31 =>
                                         {
-                                            vertexTypeString[indexVertexAttributesCount] = 'U';
+//                                             vertexTypeString[indexVertexAttributesCount] = 'U';
                                         },
                                         0x80 =>
                                         {
-                                            vertexTypeString[indexVertexAttributesCount] = 'I';
+//                                             vertexTypeString[indexVertexAttributesCount] = 'I';
                                         },
                                         0x90 =>
                                         {
-                                            vertexTypeString[indexVertexAttributesCount] = 'W';
+//                                             vertexTypeString[indexVertexAttributesCount] = 'W';
                                         },
                                         else =>
                                         {
@@ -737,10 +737,10 @@ fn readChunk_Mesh(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, fileBufferPtrItera
                                     var attributeElementsCount = bufferPtrItr[4];
                                     while(attributeElementsCount > 0x10){attributeElementsCount-=0x10;}
                                     vertexFormat[indexVertexAttributesCount+1] = attributeElementsCount;
-                                    vertexTypeString[indexVertexAttributesCount+1] = attributeElementsCount+0x30;
+//                                     vertexTypeString[indexVertexAttributesCount+1] = attributeElementsCount+0x30;
                                     bufferPtrItr+=8;
                                 }
-                                mesh.vertexFormat = vertexTypeString;
+                                mesh.vertexFormat = vertexFormat;
                             }
                             const elementsCount: u32 = readFromPtr(u32, dataTable.dataAfterHeaderPtr + dataTable.dataPtr[1*2+1]);
                             print("verticesCount: {d}\n", .{elementsCount});
@@ -751,7 +751,7 @@ fn readChunk_Mesh(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, fileBufferPtrItera
                             const dataCompressedSize: u32 = readFromPtr(u32, bufferPtrItr+8);
 
 //                             mesh.verticesBuffer = allocInFixedBuffer(memoryBufferItr, dataSize, CustomMem.SIMDalignment);
-                            mesh.verticesBuffer = PageAllocator.map(dataSize).ptr;
+                            mesh.verticesBuffer = PageAllocator.map(dataSize);
                             //(allocator.alignedAlloc(u8, CustomMem.alingment, dataSize) catch unreachable).ptr;
                             mesh.verticesBufferSize = dataSize;
                             mesh.verticesCount = @intCast(elementsCount);
@@ -764,36 +764,65 @@ fn readChunk_Mesh(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, fileBufferPtrItera
                                 memcpy(mesh.verticesBuffer, dataBlockPtr+dataOffset, dataSize);
                             }
 //                             AoS => SoA
-                            const SoA_verticesBuffer = PageAllocator.map(dataSize).ptr;
+                            const SoA_verticesBuffer = PageAllocator.map(dataSize);
                             var verticesBufferPtr = SoA_verticesBuffer;
                             var attributeOffset: u64 = 0;
                             for(0..8) |elementTypeIndex|
                             {
-                                const attributeType = vertexTypeString[elementTypeIndex*2];
+                                const attributeType = vertexFormat[elementTypeIndex*2];
                                 var attributeSize: u64 = 0;
                                 if(attributeType == 0)
                                     break;
+//                                 switch(attributeType)
+//                                 {
+//                                     'P','N' =>
+//                                     {
+//                                         attributeSize = 12;
+//                                     },
+//                                     'U' =>
+//                                     {
+//                                         attributeSize = 8;
+//                                     },
+//                                     'C' =>
+//                                     {
+//                                         attributeSize = 4;
+//                                     },
+//                                     'T' =>
+//                                     {
+//                                         attributeSize = 16;
+//                                     },
+//                                     else =>
+//                                     {
+//                                         print("unknown value in SoA switch: {c}\n", .{attributeType});
+//                                         exit(0);
+//                                     }
+//                                 }
                                 switch(attributeType)
                                 {
-                                    'P' =>
+                                    0x10,0x40,0x11 =>
                                     {
                                         attributeSize = 12;
                                     },
-                                    'N' =>
-                                    {
-                                        attributeSize = 12;
-                                    },
-                                    'U' =>
+                                    0x30,0x31 =>
                                     {
                                         attributeSize = 8;
                                     },
+                                    0x20 =>
+                                    {
+                                        attributeSize = 4;
+                                    },
+                                    0x70 =>
+                                    {
+                                        attributeSize = 16;
+                                    },
                                     else =>
                                     {
-                                        break;
+                                        print("unknown value in SoA switch: {x}\n", .{attributeType});
+                                        exit(0);
                                     }
                                 }
-                                print("verticesBufferOffset: {d}\n", .{@intFromPtr(verticesBufferPtr) - @intFromPtr(SoA_verticesBuffer)});
-                                print("attributeOffset: {d}\n", .{attributeOffset});
+//                                 print("verticesBufferOffset: {d}\n", .{@intFromPtr(verticesBufferPtr) - @intFromPtr(SoA_verticesBuffer)});
+//                                 print("attributeOffset: {d}\n", .{attributeOffset});
                                 for(0..elementsCount) |elementIndex|
                                 {
                                     memcpy(verticesBufferPtr, mesh.verticesBuffer+vertexSize*elementIndex+attributeOffset, attributeSize);
@@ -801,8 +830,110 @@ fn readChunk_Mesh(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, fileBufferPtrItera
                                 }
                                 attributeOffset+=attributeSize;
                             }
-                            PageAllocator.unmap(mesh.verticesBuffer[0..dataSize]);
+                            PageAllocator.unmap(mesh.verticesBuffer, dataSize);
                             mesh.verticesBuffer = SoA_verticesBuffer;
+//                             rotate coordinates
+                            verticesBufferPtr = SoA_verticesBuffer;
+                            var P3N3U2C4T4P30000 = [16]u8{0x10,0x3,0x40,0x3,0x30,0x2,0x20,0x4,0x70,0x4,0x11,0x3,0x0,0x0,0x0,0x0};
+//                             for(0..16) |i|
+//                             {
+//                                 print("0x{x} ", .{mesh.vertexFormat[i]});
+//                             }
+//                             print("\n", .{});
+//                             for(0..16) |i|
+//                             {
+//                                 print("0x{x} ", .{P3N3U2C4T4P30000[i]});
+//                             }
+//                             print("\n", .{});
+//                             const P3N3U2C4T4P30000 = [16]u8{0x10,3,0x40,3,0x30,2,0x20,4,0x70,4,0x11,3,0,0,0,0};
+                            for(0..8) |elementTypeIndex|
+                            {
+                                const attributeType = vertexFormat[elementTypeIndex*2];
+                                var attributeSize: u64 = 0;
+                                if(attributeType == 0)
+                                    break;
+                                switch(attributeType)
+                                {
+//                                     'P','N' =>
+//                                     {
+//                                         attributeSize = 12;
+//                                     },
+//                                     'U' =>
+//                                     {
+//                                         attributeSize = 8;
+//                                     },
+//                                     'C' =>
+//                                     {
+//                                         attributeSize = 4;
+//                                     },
+//                                     'T' =>
+//                                     {
+//                                         attributeSize = 16;
+//                                     },
+                                    0x10,0x40,0x11 =>
+                                    {
+                                        attributeSize = 12;
+                                    },
+                                    0x30,0x31 =>
+                                    {
+                                        attributeSize = 8;
+                                    },
+                                    0x20 =>
+                                    {
+                                        attributeSize = 4;
+                                    },
+                                    0x70 =>
+                                    {
+                                        attributeSize = 16;
+                                    },
+                                    else => unreachable
+                                }
+//                                 if(readFromPtr(u128, &mesh.vertexFormat) == readFromPtr(u128, &P3N3U2C4T4P30000))
+//                                 {
+//                                     exit(0);
+//                                 }
+                                if(readFromPtr(u128, &mesh.vertexFormat) == readFromPtr(u128, &P3N3U2C4T4P30000))
+                                {
+                                    if(attributeType == 0x10)
+                                    {
+                                        for(0..elementsCount) |vertexIndex|
+                                        {
+                                            const vertex = CustomMem.readFromPtr([3]f32, verticesBufferPtr+vertexIndex*12);
+                                            const vertexRotated = [3]f32{vertex[0], -vertex[1], -vertex[2]};
+                                            CustomMem.ptrOnValue([3]f32, verticesBufferPtr+vertexIndex*12).* = vertexRotated;
+                                        }
+                                    }
+                                    if(attributeType == 0x11)
+                                    {
+                                        for(0..elementsCount) |vertexIndex|
+                                        {
+                                            const vertex = CustomMem.readFromPtr([3]f32, verticesBufferPtr+vertexIndex*12);
+                                            const vertexRotated = [3]f32{vertex[0], -vertex[2], vertex[1]};
+                                            CustomMem.ptrOnValue([3]f32, verticesBufferPtr+vertexIndex*12).* = vertexRotated;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    if(attributeType == 0x10)
+                                    {
+                                        for(0..elementsCount) |vertexIndex|
+                                        {
+                                            const vertex = CustomMem.readFromPtr([3]f32, verticesBufferPtr+vertexIndex*12);
+                                            const vertexRotated = [3]f32{vertex[0], vertex[2], vertex[1]};
+                                            CustomMem.ptrOnValue([3]f32, verticesBufferPtr+vertexIndex*12).* = vertexRotated;
+                                        }
+                                        //                                     break;
+                                    }
+                                }
+                                verticesBufferPtr += attributeSize*elementsCount;
+                            }
+//                             for(0..elementsCount) |vertexIndex|
+//                             {
+//                                 const vertex = CustomMem.readFromPtr([3]f32, SoA_verticesBuffer+vertexIndex*12);
+//                                 const vertexRotated = [3]f32{vertex[0], vertex[2], -vertex[1]};
+//                                 CustomMem.ptrOnValue([3]f32, SoA_verticesBuffer+vertexIndex*12).* = vertexRotated;
+//                             }
                         }
                     },
                     else =>
@@ -1000,7 +1131,6 @@ pub fn searchString(comptime string: []const u8) void
     {
         while(direntIndices[level] < direntSizes[level])
         {
-//             const entry = @as(*align(1) linux.dirent64, @ptrCast(@as([*]u8, @ptrCast(stackBufferPtr))+direntIndices[level]));
             const entry = CustomMem.ptrCast(*align(1) linux.dirent64, CustomMem.ptrCast([*]u8, stackBufferPtr)+direntIndices[level]);
 
             const namePtr: [*]u8 = @ptrCast(&entry.name);
@@ -1013,11 +1143,6 @@ pub fn searchString(comptime string: []const u8) void
                 const clbExt = [4]u8{'.', 'c', 'l', 'b'};
                 if(@as(*align(1)u32, @ptrCast(namePtr+nameLen-4)).* == @as(u32, @bitCast(clbExt)))
                 {
-//                     for(0..level) |_|
-//                     {
-//                         print("    ", .{});
-//                     }
-//                     print("{s}\n", .{namePtr[0..nameLen]});
                     parseStrings(string, namePtr, nameLen, dirFDs[level]);
                 }
             }
@@ -1033,6 +1158,7 @@ pub fn searchString(comptime string: []const u8) void
                 dirFDs[level] = @intCast(linux.openat(dirFDs[level-1], @ptrCast(namePtr), .{.ACCMODE = .RDONLY}, mode));
                 direntSizes[level] = @intCast(linux.getdents64(dirFDs[level], stackBufferPtr, stackBuffer.len));
                 direntIndices[level] = 0;
+                continue :jmp;
             }
         }
         if(level > 0)
@@ -1057,8 +1183,8 @@ pub fn clb_convert(path: [*:0]const u8, srcDirfd: fd_t, archive: *Archive, ) voi
     _ = CustomFS.fstat(srcfilefd, &fileStat);
     const fileSize: u64 = @intCast(fileStat.size);
     const memoryBuffer = PageAllocator.map(fileSize);
-    defer PageAllocator.unmap(memoryBuffer);
-    const fileBuffer = memoryBuffer.ptr;
+    defer PageAllocator.unmap(memoryBuffer, fileSize);
+    const fileBuffer = memoryBuffer;
 
     _ = CustomFS.read(srcfilefd, fileBuffer, fileSize);
     _ = CustomFS.close(srcfilefd);
@@ -1312,7 +1438,7 @@ pub fn convertArchives(comptime archivesPaths: []const[*:0]const u8, srcDirfd: f
     var texturesCount: u64 = 0;
     var meshesCount: u64 = 0;
 
-    const clb_custom_fd: fd_t = CustomFS.openat(dstDirfd, "customArchive.clb", .{.ACCMODE = .WRONLY, .CREAT = true, .TRUNC = true});
+    const clb_custom_fd: fd_t = CustomFS.openat(dstDirfd, "/tmp/customArchive.clb", .{.ACCMODE = .WRONLY, .CREAT = true, .TRUNC = true});
     defer _ = CustomFS.close(clb_custom_fd);
     var archives: [archivesPaths.len]Archive = undefined;
     @memset(&archives, .{.texturesCount = 0, .meshesCount = 0});

@@ -1,16 +1,11 @@
 const std = @import("std");
 const mem = std.mem;
-const print = std.debug.print;
 
-// extern fn memcpy(noalias dst: [*]u8, noalias src: [*]const u8, sizeIn: u64) void;
 const CustomMem = @import("CustomMem.zig");
 const memcpy = CustomMem.memcpy;
 // const memcpyDstAlign = customMem.memcpyDstAlign;
 
 const Math = @import("Math.zig");
-// const zmath = @import("zmath.zig");
-// const globalState = @import("globalState.zig");
-// const Vulkan = @import("Vulkan.zig");
 const Vulkan = @import("Vulkan.zig");
 
 const VulkanGlobalState = @import("VulkanGlobalState.zig");
@@ -29,7 +24,7 @@ pub var _cameraDescriptorSets: [VulkanGlobalState.FRAME_OVERLAP]Vulkan.VkDescrip
 
 pub var camera_translate_x: f32 = 0;
 pub var camera_translate_y: f32 = 0;
-pub var camera_translate_z: f32 = 0;
+pub var camera_translate_z: f32 = -2;
 pub var camera_rotate_x: f32 = 0;
 pub var camera_rotate_y: f32 = 0;
 pub var camera_rotate_z: f32 = 0;
@@ -140,23 +135,16 @@ pub fn createCameraVkDescriptorSets() void
 		i+=1;
 	}
 }
-// export const updateCameraBufferLabel: *const anyopaque = &updateCameraBuffer;
-pub noinline fn updateCameraBuffer(currentFrame: usize) void
+pub fn updateCameraBuffer(currentFrame: usize) void
 {
-//  var CoordinateSystem: algebra.mat4 = undefined;
 	var camera: CameraBufferObject = undefined;
-//  var cameraScale: algebra.mat4 = undefined;
 
 //  const cameraScale = math.matScaling(1.0, 1.0, 1.0);
-    const cameraRotate = Math.matRotationX(camera_rotate_x);
-//     const cameraRotate = Math.matRotationY(camera_rotate_y);
-//     const cameraRotate = Math.matRotationZ(camera_rotate_z);
-	const cameraTranslate = Math.matTranslation(0+camera_translate_x, 0+camera_translate_y, 2+camera_translate_z);
-	camera.view = Math.mulMat(cameraRotate, cameraTranslate);
-    camera.view = Math.mulMat(cameraTranslate, cameraRotate);
-//     camera.view = cameraTranslate;
-    camera.proj = Math.matPerspective(90.0, @as(f32, @floatFromInt(WindowGlobalState._windowExtent.width)) / @as(f32, @floatFromInt(WindowGlobalState._windowExtent.height)), 1.0/1024.0, 16.0);//1.0/1024.0
-//     camera.proj = Math.matPerspectiveReversed(90.0, @as(f32, @floatFromInt(WindowGlobalState._windowExtent.width)) / @as(f32, @floatFromInt(WindowGlobalState._windowExtent.height)), 1.0/1024.0, 1024.0);//1.0/1024.0
-//  camera.proj = algebra.mul(camera.proj, cameraScale);
+    const cameraRotate = Math.matRotation(camera_rotate_x, 'x');
+	const cameraTranslate = Math.matTranslation(0+camera_translate_x, camera_translate_y, camera_translate_z);
+//     camera.view = Math.mulMat(cameraRotate, cameraTranslate);
+    camera.view = Math.mulMatFast(cameraRotate, cameraTranslate);
+    camera.proj = Math.matPerspectiveReversedInfinity(90.0, @as(f32, @floatFromInt(WindowGlobalState._windowExtent.width)) / @as(f32, @floatFromInt(WindowGlobalState._windowExtent.height)), 1.0/1024.0);
+    camera.proj = Math.mulMatFast(camera.view, camera.proj);
 	CustomMem.memcpyInline(@ptrCast(_cameraBuffersMapped[currentFrame]), @ptrCast(&camera), @sizeOf(CameraBufferObject));
 }
