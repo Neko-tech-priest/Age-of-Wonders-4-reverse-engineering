@@ -21,7 +21,6 @@ layout(scalar, buffer_reference, buffer_reference_align = 4) readonly buffer Vec
 struct HexData
 {
     vec2 position;
-//     uint textureIndex;
 };
 layout(scalar, buffer_reference, buffer_reference_align = 4) readonly buffer HexDataBuffer{
     HexData data[];
@@ -29,7 +28,6 @@ layout(scalar, buffer_reference, buffer_reference_align = 4) readonly buffer Hex
 layout(push_constant, scalar) uniform constants
 {
     HexDataBuffer hexDataBuffer;
-//     float xy[2];
     uint64_t vertexBuffer;
     uint verticesCount;
 }

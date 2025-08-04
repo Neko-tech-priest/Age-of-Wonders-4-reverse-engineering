@@ -1,12 +1,14 @@
 const std = @import("std");
 const mem = std.mem;
 const linux = std.os.linux;
-const print = std.debug.print;
-const exit = std.process.exit;
 const hash = std.hash.RapidHash.hash;
 const fd_t = std.posix.fd_t;
 
 const CustomFS = @import("CustomFS.zig");
+const CustomIO = @import("CustomIO.zig");
+const print = CustomIO.print;
+const CustomThreads = @import("CustomThreads.zig");
+const exit = CustomThreads.exit;
 const CustomMem = @import("CustomMem.zig");
 const ptrCast = CustomMem.ptrCast;
 const alignPtrCast = CustomMem.alignPtrCast;
@@ -110,13 +112,15 @@ pub fn clb_readEffects(memoryBuffer: *[]u8, path: [*:0]const u8, dirfd: i32,) vo
     const clb_Signature: [8]u8 = .{0x43, 0x52, 0x4c, 0x00, 0x60, 0x00, 0x41, 0x00};
     if(alignPtrCast(*u64, fileBuffer).* != @as(u64, @bitCast(clb_Signature)))
     {
-        print("incorrect clb signature!", .{});
-        exit(0);
+        const string = "incorrect clb signature!\n";
+        _ = CustomFS.write(1, string, string.len);
+        exit();
     }
     if(fileBuffer[8] != 8)
     {
-        print("!= 8\n", .{});
-        exit(0);
+        const string = "!= 8\n";
+        _ = CustomFS.write(1, string, string.len);
+        exit();
     }
     const clb_TablesOffsetsPtr: [*]u8 = fileBuffer+12;
     const stringsOffsetPtr: [*]u8 = fileBuffer+0x20;
@@ -125,10 +129,10 @@ pub fn clb_readEffects(memoryBuffer: *[]u8, path: [*:0]const u8, dirfd: i32,) vo
     var libraryNameLen: u64 = 0;
     while(bufferPtrItr[libraryNameLen] != 0)
         libraryNameLen+=1;
-    print("{s}\n", .{bufferPtrItr[0..libraryNameLen]});
+    print("s\n", .{bufferPtrItr[0..libraryNameLen]});
     bufferPtrItr += alignPtrCast(*u32, clb_TablesOffsetsPtr).*;
     const dataOffsetPtr = bufferPtrItr + readFromPtr(u32, fileBuffer+16);
-    print("dataOffset: {x}\n", .{@intFromPtr(dataOffsetPtr)-@intFromPtr(fileBuffer)});
+    print("sx\n", .{"dataOffset: ",@intFromPtr(dataOffsetPtr)-@intFromPtr(fileBuffer)});
     //     print("{x}\n\n", .{@intFromPtr(fileBufferPtrIterator) - @intFromPtr(fileBuffer)});
 
 
@@ -145,8 +149,10 @@ pub fn clb_readEffects(memoryBuffer: *[]u8, path: [*:0]const u8, dirfd: i32,) vo
         // header tables
         if(readFromPtr(u16, clbTable.dataAfterHeaderPtr + clbTable.header[2][1]) != 0x0101)
         {
-            print("!= 0x0101\n", .{});
-            exit(0);
+//             print("!= 0x0101\n", .{});
+            const string = "!= 0x0101\n";
+            _ = CustomFS.write(1, string, string.len);
+            exit();
         }
         const headersTable = readTable(&stackBufferPtr, clbTable.dataAfterHeaderPtr + clbTable.header[2][1] + 3);
         {
@@ -224,7 +230,7 @@ fn readChunk_Effect(memoryBufferItr: *[*]u8, fileBuffer: [*]u8, bufferPtrItrIn: 
     //     _ = fileBuffer;
     //     _ = bufferPtrItrIn;
     //     _ = stringsOffsetPtr;
-    print("{x}\n", .{@intFromPtr(bufferPtrItrIn)-@intFromPtr(fileBuffer)});
+    print("x\n", .{@intFromPtr(bufferPtrItrIn)-@intFromPtr(fileBuffer)});
     var stackBuffer: [0x10000]u8 align(0x1000) = undefined;
     var stackBufferPtr: [*]u8 = &stackBuffer;
     var bufferPtrItr: [*]u8 = undefined;
@@ -236,8 +242,8 @@ fn readChunk_Effect(memoryBufferItr: *[*]u8, fileBuffer: [*]u8, bufferPtrItrIn: 
         bufferPtrItr+=8;
         const NameLen: u64 = bufferPtrItr[0];
         const NameOffset: u64 = readFromPtr(u32, bufferPtrItr+4);
-        print("{s}\n", .{(stringsOffsetPtr+LibraryNameOffset)[0..LibraryNameLen]});
-        print("{s}\n", .{(stringsOffsetPtr+NameOffset)[0..NameLen]});
+        print("s\n", .{(stringsOffsetPtr+LibraryNameOffset)[0..LibraryNameLen]});
+        print("s\n", .{(stringsOffsetPtr+NameOffset)[0..NameLen]});
         if(stringsOffsetPtr[NameOffset] == '_')
             return;
         blockTable.printDataOffsets(fileBuffer, 0);
@@ -355,8 +361,9 @@ fn readChunk_Effect(memoryBufferItr: *[*]u8, fileBuffer: [*]u8, bufferPtrItrIn: 
             //             print("offset: {x}\n", .{@intFromPtr(bufferPtrItr) - @intFromPtr(fileBuffer)});
             if(readFromPtr(u16, bufferPtrItr) != 0x0101)
             {
-                print("!= 0x0101\n", .{});
-                exit(0);
+                const string = "!= 0x0101\n";
+                _ = CustomFS.write(1, string, string.len);
+                exit();
             }
             bufferPtrItr+=3;
             const table_1 = readTable(&stackBufferPtr, bufferPtrItr);
@@ -367,29 +374,30 @@ fn readChunk_Effect(memoryBufferItr: *[*]u8, fileBuffer: [*]u8, bufferPtrItrIn: 
                 //                 print("offset: {x}\n", .{@intFromPtr(bufferPtrItr) - @intFromPtr(fileBuffer)});
                 if(readFromPtr(u32, bufferPtrItr) != 0x41166a)
                 {
-                    print("!= 0x41166a\n", .{});
-                    exit(0);
+                    const string = "!= 0x41166a\n";
+                    _ = CustomFS.write(1, string, string.len);
+                    exit();
                 }
                 bufferPtrItr+=4;
                 const table_2 = read_0x80Table(bufferPtrItr);
                 {
                     bufferPtrItr = table_2.dataAfterHeaderPtr;
-                    print("offset: {x}\n", .{@intFromPtr(bufferPtrItr) - @intFromPtr(fileBuffer)});
+                    print("sx\n", .{"offset: ",@intFromPtr(bufferPtrItr) - @intFromPtr(fileBuffer)});
                     const table_3 = readTable(&stackBufferPtr, bufferPtrItr);
                     {
                         bufferPtrItr = table_3.dataAfterHeaderPtr;
                         table_3.printDataOffsets(fileBuffer, 12);
-                        print("offset: {x}\n", .{@intFromPtr(bufferPtrItr) - @intFromPtr(fileBuffer)});
+                        print("sx\n", .{"offset: ",@intFromPtr(bufferPtrItr) - @intFromPtr(fileBuffer)});
                         // 0x1-0x2
                         inline for(0..2) |i|
                         {
                             const I = i*8;
                             const nameLen: u64 = bufferPtrItr[I];
                             const nameOffset: u64 = readFromPtr(u32, bufferPtrItr+I+4);
-                            print("{s}\n", .{(stringsOffsetPtr+nameOffset)[0..nameLen]});
+                            print("s\n", .{(stringsOffsetPtr+nameOffset)[0..nameLen]});
                         }
                         bufferPtrItr+=16;
-                        print("offset: {x}\n", .{@intFromPtr(bufferPtrItr) - @intFromPtr(fileBuffer)});
+                        print("sx\n", .{"offset: ",@intFromPtr(bufferPtrItr) - @intFromPtr(fileBuffer)});
                         // 0x3
                         //0561561f
                         const table_4 = readTableNear(bufferPtrItr);
@@ -397,7 +405,7 @@ fn readChunk_Effect(memoryBufferItr: *[*]u8, fileBuffer: [*]u8, bufferPtrItrIn: 
                             //                             table_4.printDataOffsets(fileBuffer, 16);
                             bufferPtrItr = table_4.dataAfterHeaderPtr;
                         }
-                        print("offset: {x}\n", .{@intFromPtr(bufferPtrItr) - @intFromPtr(fileBuffer)});
+                        print("sx\n", .{"offset: ",@intFromPtr(bufferPtrItr) - @intFromPtr(fileBuffer)});
                         // 0x4,5
                         bufferPtrItr+=2;
                         // 0x7
@@ -476,12 +484,12 @@ fn readChunk_Effect(memoryBufferItr: *[*]u8, fileBuffer: [*]u8, bufferPtrItrIn: 
         //             exit(0);
         //         }
     }
-    print("\n", .{});
+    const string = "\n";
+    _ = CustomFS.write(1, string, string.len);
 }
 fn readChunk_Texture(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, bufferPtrItrIn: [*]u8, stringsOffsetPtr: [*]u8, dataBlockPtr: [*]u8, archive: *Archive) void
 {
     _ = fileBuffer;
-    const stdout = GlobalState.stdout;
     var stackBufferPtr = stackBufferPtrIn;
     const texture = &archive.textures[archive.texturesCount];
     var bufferPtrItr: [*]u8 = undefined;
@@ -494,7 +502,7 @@ fn readChunk_Texture(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, bufferPtrItrIn:
         const NameLen: u64 = bufferPtrItr[0];
         const NameOffset: u64 = readFromPtr(u32, bufferPtrItr+4);
 //         stdout.print("{s}\n", .{(stringsOffsetPtr+LibraryNameOffset)[0..LibraryNameLen]}) catch unreachable;
-        stdout.print("{s}\n", .{(stringsOffsetPtr+NameOffset)[0..NameLen]}) catch unreachable;
+        print("s\n", .{(stringsOffsetPtr+NameOffset)[0..NameLen]});
         archive.hashes[hashIndex] = hash(0, (stringsOffsetPtr+NameOffset)[0..NameLen]);
         hashIndex+=1;
 //         texture.name = stringsOffsetPtr+NameOffset;
@@ -527,40 +535,55 @@ fn readChunk_Texture(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, bufferPtrItrIn:
                     texture.image.format = Vulkan.VK_FORMAT_R8G8B8A8_UNORM;
                     texture.image.alignment = 4;
                     if(printFormat)
-                        stdout.print("format: R8G8B8A8_UNORM\n", .{}) catch unreachable;
+                    {
+                        const string = "format: R8G8B8A8_UNORM\n";
+                        _ = CustomFS.write(1, string, string.len);
+                    }
                 },
                 0x6E =>
                 {
                     texture.image.format = Vulkan.VK_FORMAT_B8G8R8A8_UNORM;
                     texture.image.alignment = 4;
                     if(printFormat)
-                        stdout.print("format: B8G8R8A8_UNORM\n", .{}) catch unreachable;
+                    {
+                        const string = "format: B8G8R8A8_UNORM\n";
+                        _ = CustomFS.write(1, string, string.len);
+                    }
                 },
                 0x83 =>
                 {
                     texture.image.format = Vulkan.VK_FORMAT_BC1_RGB_SRGB_BLOCK;
                     texture.image.alignment = 8;
                     if(printFormat)
-                        stdout.print("format: BC1_RGB_SRGB_BLOCK\n", .{}) catch unreachable;
+                    {
+                        const string = "format: BC1_RGB_SRGB_BLOCK\n";
+                        _ = CustomFS.write(1, string, string.len);
+                    }
                 },
                 0x97 =>
                 {
                     texture.image.format = Vulkan.VK_FORMAT_BC3_UNORM_BLOCK;
                     texture.image.alignment = 16;
                     if(printFormat)
-                        stdout.print("format: BC3_UNORM_BLOCK\n", .{}) catch unreachable;
+                    {
+                        const string = "format: BC3_UNORM_BLOCK\n";
+                        _ = CustomFS.write(1, string, string.len);
+                    }
                 },
                 0xAC =>
                 {
                     texture.image.format = Vulkan.VK_FORMAT_BC5_SNORM_BLOCK;
                     texture.image.alignment = 16;
                     if(printFormat)
-                        stdout.print("format: BC5_SNORM_BLOCK\n", .{}) catch unreachable;
+                    {
+                        const string = "format: BC5_SNORM_BLOCK\n";
+                        _ = CustomFS.write(1, string, string.len);
+                    }
                 },
                 else =>
                 {
-                    print("unknown texture image format!\n", .{});
-                    exit(0);
+
+                    exit();
                 }
             }
             var offsets: [16]u64 = undefined;
@@ -613,7 +636,6 @@ fn readChunk_Texture(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, bufferPtrItrIn:
 }
 fn readChunk_Mesh(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, fileBufferPtrIteratorIn: [*]u8, stringsOffsetPtr: [*]u8, dataBlockPtr: [*]u8, archive: *Archive) void
 {
-    const stdout = GlobalState.stdout;
 //     print("offset: {x}\n", .{@intFromPtr(fileBufferPtrIteratorIn) - @intFromPtr(fileBuffer)});
     var stackBufferPtr = stackBufferPtrIn;
     const mesh = &archive.meshes[archive.meshesCount];
@@ -629,7 +651,7 @@ fn readChunk_Mesh(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, fileBufferPtrItera
         const NameLen: u64 = bufferPtrItr[0];
         const NameOffset: u64 = readFromPtr(u32, bufferPtrItr+4);
 //         stdout.print("{s}\n", .{(stringsOffsetPtr+LibraryNameOffset)[0..LibraryNameLen]}) catch unreachable;
-        stdout.print("{s}\n", .{(stringsOffsetPtr+NameOffset)[0..NameLen]}) catch unreachable;
+        print("s\n", .{(stringsOffsetPtr+NameOffset)[0..NameLen]});
         archive.hashes[hashIndex] = hash(0, (stringsOffsetPtr+NameOffset)[0..NameLen]);
         hashIndex+=1;
 //         mesh.name = stringsOffsetPtr+NameOffset;
@@ -648,7 +670,7 @@ fn readChunk_Mesh(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, fileBufferPtrItera
                         const dataTable = readTableNear(bufferPtrItr);
                         {
                             const elementsCount: u32 = readFromPtr(u32, dataTable.dataAfterHeaderPtr + 1);
-                            print("indicesCount: {d}\n", .{elementsCount});
+                            print("sd\n", .{"indicesCount: ",elementsCount});
                             const dataOffset: u64 = readFromPtr(u32, dataTable.dataAfterHeaderPtr + 5);
                             bufferPtrItr = dataTable.dataAfterHeaderPtr + 9;
                             const dataSize: u32 = readFromPtr(u32, bufferPtrItr+4);
@@ -730,8 +752,9 @@ fn readChunk_Mesh(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, fileBufferPtrItera
                                         else =>
                                         {
 //                                             vertexTypeString[indexVertexAttributesCount] = '0';
-                                            print("unknown attribute type: {x}!\n{x}\n", .{value, @intFromPtr(bufferPtrItr) - @intFromPtr(fileBuffer)});
-                                            exit(0);
+//                                             print("unknown attribute type: {x}!\n{x}\n", .{value, @intFromPtr(bufferPtrItr) - @intFromPtr(fileBuffer)});
+                                            print("sx\nx\n", .{"unknown attribute type: ",value, @intFromPtr(bufferPtrItr) - @intFromPtr(fileBuffer)});
+                                            exit();
                                         }
                                     }
                                     var attributeElementsCount = bufferPtrItr[4];
@@ -743,7 +766,7 @@ fn readChunk_Mesh(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, fileBufferPtrItera
                                 mesh.vertexFormat = vertexFormat;
                             }
                             const elementsCount: u32 = readFromPtr(u32, dataTable.dataAfterHeaderPtr + dataTable.dataPtr[1*2+1]);
-                            print("verticesCount: {d}\n", .{elementsCount});
+                            print("sd\n", .{"verticesCount: ",elementsCount});
                             const dataOffset: u64 = readFromPtr(u32, dataTable.dataAfterHeaderPtr + dataTable.dataPtr[2*2+1]);
                             bufferPtrItr = dataTable.dataAfterHeaderPtr + dataTable.dataPtr[2*2+1] + 4;
 //                             print("{x}\n", .{@intFromPtr(fileBufferPtrIterator) - @intFromPtr(fileBuffer)});
@@ -817,8 +840,8 @@ fn readChunk_Mesh(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, fileBufferPtrItera
                                     },
                                     else =>
                                     {
-                                        print("unknown value in SoA switch: {x}\n", .{attributeType});
-                                        exit(0);
+                                        print("sx\n", .{"unknown value in SoA switch: ",attributeType});
+                                        exit();
                                     }
                                 }
 //                                 print("verticesBufferOffset: {d}\n", .{@intFromPtr(verticesBufferPtr) - @intFromPtr(SoA_verticesBuffer)});
@@ -908,7 +931,7 @@ fn readChunk_Mesh(stackBufferPtrIn: [*]u8, fileBuffer: [*]u8, fileBufferPtrItera
                                         for(0..elementsCount) |vertexIndex|
                                         {
                                             const vertex = CustomMem.readFromPtr([3]f32, verticesBufferPtr+vertexIndex*12);
-                                            const vertexRotated = [3]f32{vertex[0], -vertex[2], vertex[1]};
+                                            const vertexRotated = [3]f32{vertex[0], vertex[2], vertex[1]};
                                             CustomMem.ptrOnValue([3]f32, verticesBufferPtr+vertexIndex*12).* = vertexRotated;
                                         }
                                     }
@@ -1092,7 +1115,8 @@ inline fn parseStrings(comptime string: []const u8, fileName: [*]const u8, fileN
         }
         if(CustomMem.memcmp(stackBufferPtr, string.ptr, string.len))
         {
-            print("{s}:\n", .{fileName[0..fileNameLen]});
+//             print("{s}:\n", .{fileName[0..fileNameLen]});
+            print("s\n", .{fileName[0..fileNameLen]});
         }
 //         if(@as(*align(1)u16, @ptrCast(stackBufferPtr)) == @as(u16, @bitCast(string[0..2])))
 //         {
@@ -1150,9 +1174,10 @@ pub fn searchString(comptime string: []const u8) void
             {
                 for(0..level) |_|
                 {
-                    print("    ", .{});
+                    const _string = "    ";
+                    CustomFS.write(1, _string, _string.len);
                 }
-                print("{s}\n", .{namePtr[0..nameLen]});
+                print("s\n", .{namePtr[0..nameLen]});
                 stackBufferPtr += direntSizes[level];
                 level+=1;
                 dirFDs[level] = @intCast(linux.openat(dirFDs[level-1], @ptrCast(namePtr), .{.ACCMODE = .RDONLY}, mode));
@@ -1176,7 +1201,6 @@ pub fn clb_convert(path: [*:0]const u8, srcDirfd: fd_t, archive: *Archive, ) voi
 {
     var stackBuffer: [0x10000]u8 align(0x1000) = undefined;
     var stackBufferPtr: [*]u8 = &stackBuffer;
-    const stdout = GlobalState.stdout;
 //     var archive: ArchiveCustom = undefined;
     const srcfilefd: fd_t = CustomFS.openat(srcDirfd, path, .{.ACCMODE = .RDONLY});
     var fileStat: linux.Stat = undefined;
@@ -1191,13 +1215,15 @@ pub fn clb_convert(path: [*:0]const u8, srcDirfd: fd_t, archive: *Archive, ) voi
     const clb_Signature: [8]u8 = .{0x43, 0x52, 0x4c, 0x00, 0x60, 0x00, 0x41, 0x00};
     if(ptrOnValue(u64, fileBuffer).* != @as(u64, @bitCast(clb_Signature)))
     {
-        print("incorrect clb signature!", .{});
-        exit(0);
+        const string = "incorrect clb signature!\n";
+        _ = CustomFS.write(1, string, string.len);
+        exit();
     }
     if(fileBuffer[8] != 8)
     {
-        print("!= 8\n", .{});
-        exit(0);
+        const string = "!= 8\n";
+        _ = CustomFS.write(1, string, string.len);
+        exit();
     }
     const clb_TablesOffsetsPtr: [*]u8 = fileBuffer+12;
     const stringsOffsetPtr: [*]u8 = fileBuffer+0x20;
@@ -1205,15 +1231,17 @@ pub fn clb_convert(path: [*:0]const u8, srcDirfd: fd_t, archive: *Archive, ) voi
     var libraryNameLen: u64 = 0;
     while(bufferPtrItr[libraryNameLen] != 0)
         libraryNameLen+=1;
-    stdout.print("{s}\n", .{bufferPtrItr[0..libraryNameLen]}) catch unreachable;
+//     stdout.print("{s}\n", .{bufferPtrItr[0..libraryNameLen]}) catch unreachable;
+    print("s\n", .{bufferPtrItr[0..libraryNameLen]});
     bufferPtrItr += readFromPtr(u32, clb_TablesOffsetsPtr);
     const dataOffsetPtr = bufferPtrItr + readFromPtr(u32, fileBuffer+16);
-    print("dataOffset: {x}\n", .{@intFromPtr(dataOffsetPtr)-@intFromPtr(fileBuffer)});
+    print("sx\n", .{"dataOffset: ",@intFromPtr(dataOffsetPtr)-@intFromPtr(fileBuffer)});
 //     print("{x}\n\n", .{@intFromPtr(fileBufferPtrIterator) - @intFromPtr(fileBuffer)});
     if(readFromPtr(u16, bufferPtrItr) != 0x0383)
     {
-        print("!= 0x0383\n", .{});
-        exit(0);
+        const string = "!= 0x0383\n";
+        _ = CustomFS.write(1, string, string.len);
+        exit();
     }
     const clbTable = readTable(&stackBufferPtr, bufferPtrItr);
     {
@@ -1222,8 +1250,9 @@ pub fn clb_convert(path: [*:0]const u8, srcDirfd: fd_t, archive: *Archive, ) voi
         // header tables
         if(readFromPtr(u16, clbTable.dataAfterHeaderPtr + clbTable.header[2][1]) != 0x0101)
         {
-            print("!= 0x0101\n", .{});
-            exit(0);
+            const string = "!= 0x0101\n";
+            _ = CustomFS.write(1, string, string.len);
+            exit();
         }
         const headersTable = readTable(&stackBufferPtr, clbTable.dataAfterHeaderPtr + clbTable.header[2][1] + 3);
         {
@@ -1280,8 +1309,8 @@ pub fn clb_convert(path: [*:0]const u8, srcDirfd: fd_t, archive: *Archive, ) voi
 //             archive.texturesCount = @intCast(texturesCount);
 //             archive.meshesCount = @intCast(meshesCount.*);
 //             archive.modelsCount = @intCast(modelsCount);
-            stdout.print("texturesCount: {d}\n", .{archive.texturesCount}) catch unreachable;
-            stdout.print("meshesCount: {d}\n", .{archive.meshesCount}) catch unreachable;
+            print("sd\n", .{"texturesCount: ", archive.texturesCount});
+            print("sd\n", .{"meshesCount: ", archive.meshesCount});
 //             stdout.print("modelsCount: {d}\n", .{modelsCount}) catch unreachable;
 //             print("effectsCount: {d}\n", .{effectsCount});
             archive.textures = (GlobalState.allocator.alloc(Archive.Texture, archive.texturesCount) catch unreachable).ptr;
@@ -1303,9 +1332,9 @@ pub fn clb_convert(path: [*:0]const u8, srcDirfd: fd_t, archive: *Archive, ) voi
                 if(chunkType == 0x003d)
                 {
                     bufferPtrItr+=4;
-                    print("{d}\n", .{archive.texturesCount});
+                    print("d\n", .{archive.texturesCount});
                     readChunk_Texture(stackBufferPtr, fileBuffer, bufferPtrItr, stringsOffsetPtr, dataOffsetPtr, archive);
-                    stdout.print("\n", .{}) catch unreachable;
+                    print("\n", .{});
                     archive.texturesCount+=1;
                 }
             }
@@ -1316,10 +1345,10 @@ pub fn clb_convert(path: [*:0]const u8, srcDirfd: fd_t, archive: *Archive, ) voi
                 if(chunkType == 0x0035)
                 {
                     bufferPtrItr+=4;
-                    print("{d}\n", .{archive.meshesCount});
+                    print("d\n", .{archive.meshesCount});
                     readChunk_Mesh(stackBufferPtr, fileBuffer, bufferPtrItr, stringsOffsetPtr, dataOffsetPtr, archive);
 //                     const mesh = &archive.meshes[archive.meshesCount];
-                    stdout.print("\n", .{}) catch unreachable;
+                    print("\n", .{});
 //                     P3N3U2C4T4P3
 //                     const vertexFormat = [16]u8{'P','3','N','3','U','2','C','4','T','4','P','3',0,0,0,0};
 //                     const vertexFormat: []const u8 = "P3N3U2C4T4P30000"[0..16];
@@ -1427,11 +1456,10 @@ pub fn clb_convert(path: [*:0]const u8, srcDirfd: fd_t, archive: *Archive, ) voi
 //             }
         }
     }
-    stdout.print("\n", .{}) catch unreachable;
+    print("\n", .{});
 }
 pub fn convertArchives(comptime archivesPaths: []const[*:0]const u8, srcDirfd: fd_t, dstDirfd: fd_t) void
 {
-    const stdout = GlobalState.stdout;
     var stackBuffer: [0x100000]u8 align(0x1000) = undefined;
     var stackBufferPtr: [*]u8 = &stackBuffer;
 
@@ -1449,8 +1477,8 @@ pub fn convertArchives(comptime archivesPaths: []const[*:0]const u8, srcDirfd: f
         meshesCount += archives[i].meshesCount;
 //         break;
     }
-    stdout.print("texturesCount: {d}\n", .{texturesCount}) catch unreachable;
-    stdout.print("meshesCount: {d}\n", .{meshesCount}) catch unreachable;
+    print("sd\n", .{"texturesCount: ", texturesCount});
+    print("sd\n", .{"meshesCount: ", meshesCount});
     @as(*[4]u8, @ptrCast(stackBufferPtr)).* = [4]u8{'C', 'R', 'L', 'C'};
     ptrOnValue(u16, stackBufferPtr+4).* = @intCast(texturesCount);
     ptrOnValue(u16, stackBufferPtr+6).* = @intCast(meshesCount);

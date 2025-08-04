@@ -5,25 +5,25 @@ const SDL = @import("SDL3.zig");
 const Vulkan = @import("Vulkan.zig");
 const VulkanFunctionsLoader = @import("VulkanFunctionsLoader.zig");
 
-const GlobalState = @import("GlobalState.zig");
 const VulkanGlobalState = @import("VulkanGlobalState.zig");
 const VK_CHECK = VulkanGlobalState.VK_CHECK;
 const WindowGlobalState = @import("WindowGlobalState.zig");
 
 const CustomMem = @import("CustomMem.zig");
 const CustomFS = @import("CustomFS.zig");
+const CustomIO = @import("CustomIO.zig");
 const CustomThreads = @import("CustomThreads.zig");
 const exit = CustomThreads.exit;
 
-fn debugCallback(messageSeverity: Vulkan.VkDebugUtilsMessageSeverityFlagBitsEXT, messageType: Vulkan.VkDebugUtilsMessageTypeFlagsEXT, pCallbackData: [*c]const Vulkan.VkDebugUtilsMessengerCallbackDataEXT, pUserData: ?*anyopaque) callconv(.C) Vulkan.VkBool32
-{
-    _ = messageSeverity;
-    _ = messageType;
-    _ = pUserData;
-    const stdout = GlobalState.stdout;
-    stdout.print("validation layer: {s}\n", .{pCallbackData.*.pMessage}) catch unreachable;
-    return Vulkan.VK_FALSE;
-}
+// fn debugCallback(messageSeverity: Vulkan.VkDebugUtilsMessageSeverityFlagBitsEXT, messageType: Vulkan.VkDebugUtilsMessageTypeFlagsEXT, pCallbackData: [*c]const Vulkan.VkDebugUtilsMessengerCallbackDataEXT, pUserData: ?*anyopaque) callconv(.C) Vulkan.VkBool32
+// {
+//     _ = messageSeverity;
+//     _ = messageType;
+//     _ = pUserData;
+//     const stdout = CustomIO.stdout;
+//     stdout.print("validation layer: {s}\n", .{pCallbackData.*.pMessage}) catch unreachable;
+//     return Vulkan.VK_FALSE;
+// }
 fn createVkInstance(stackMemoryPtr: [*]u8) void
 {
     const validationLayers = [_][]const u8{"VK_LAYER_KHRONOS_validation"};
@@ -109,7 +109,7 @@ fn createVkInstance(stackMemoryPtr: [*]u8) void
 }
 fn createVkDevice(stackMemoryPtr: [*]u8) void
 {
-    const stdout = GlobalState.stdout;
+//     const stdout = CustomIO.stdout;
     const deviceExtensions = [_][*:0]const u8
     {
         "VK_KHR_swapchain",
@@ -200,7 +200,9 @@ fn createVkDevice(stackMemoryPtr: [*]u8) void
         }
         VulkanGlobalState._physicalDevice = physicalDevice;
 //         print("gpu: {s}\n", .{VulkanGlobalState._deviceProperties.deviceName});
-        stdout.print("gpu: {s}\n", .{std.mem.sliceTo(&VulkanGlobalState._deviceProperties.deviceName, 0)}) catch unreachable;
+//         stdout.print("gpu: {s}\n", .{std.mem.sliceTo(&VulkanGlobalState._deviceProperties.deviceName, 0)}) catch unreachable;
+//         stdout.print("gpu: {s}\n", .{&VulkanGlobalState._deviceProperties.deviceName}) catch unreachable;
+        CustomIO.print("ss\n", .{"gpu: ",&VulkanGlobalState._deviceProperties.deviceName});
         if(VulkanGlobalState._deviceProperties.deviceType == Vulkan.VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
             break;
     }

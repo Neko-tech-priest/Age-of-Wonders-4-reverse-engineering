@@ -1,5 +1,4 @@
 const std = @import("std");
-const mem = std.mem;
 
 const CustomMem = @import("CustomMem.zig");
 const memcpy = CustomMem.memcpy;
@@ -31,15 +30,12 @@ pub var camera_rotate_z: f32 = 0;
 
 const CameraBufferObject = struct
 {
-//  view: algebra.mat4,
-//  proj: algebra.mat4,
 	view: Math.Mat,
 	proj: Math.Mat,
 };
 pub fn createCameraBuffers() void
 {
 	const bufferSize: Vulkan.VkDeviceSize = @sizeOf(CameraBufferObject);
-	//print("{d}\n", .{bufferSize});
 	var i: usize = 0;
 	while(i < VulkanGlobalState.FRAME_OVERLAP)
 	{

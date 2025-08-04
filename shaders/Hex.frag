@@ -10,7 +10,7 @@ layout(set = 2, binding = 0) uniform sampler2D palette;
 
 layout(location = 0) out vec4 outColor;
 
-vec3 GroundIBL = vec3(0.12, 0.26, 0.17);
+// vec3 GroundIBL = vec3(0.12, 0.26, 0.17);
 
 float DirectLightIntensity = 4.0;
 // vec3 SunDirection = (vec3(0, 0, 1));
@@ -25,7 +25,8 @@ void main()
     normal.xy = data.xy * 2.0 - 1.0;
     normal.z = sqrt(1.0 - normal.x * normal.x - normal.y * normal.y);
 	float alpha = data.a;
-	vec3 color = texture(palette, vec2(alpha * 0.8750 - 0.0625, 0.5)).rgb;
+// 	vec3 color = texture(palette, vec2(alpha * 0.8750 - 0.0625, 0.5)).rgb;
+    vec3 color = textureLod(palette, vec2(alpha * 0.8750*8 - 0.0625*8, 0.5), 0).rgb;
     float diff = min(max(dot(normal, SunDirection), 0.0), 1.0);
 //     color += GroundIBL*0.5;
     color *= diff;

@@ -1,8 +1,7 @@
 const std = @import("std");
-// const print = std.debug.print;
 
 const Vulkan = @import("Vulkan.zig");
-const GlobalState = @import("GlobalState.zig");
+const CustomIO = @import("CustomIO.zig");
 const CustomThreads = @import("CustomThreads.zig");
 const exit = CustomThreads.exit;
 
@@ -50,8 +49,9 @@ pub fn VK_CHECK(err: Vulkan.VkResult) void
     {
         if (err != 0)
         {
-            const stdout = GlobalState.stdout;
-            stdout.print("Detected Vulkan error: {d}\n", .{err}) catch unreachable;
+//             const stdout = CustomIO.stdout;
+//             stdout.print("Detected Vulkan error: {d}\n", .{err}) catch unreachable;
+            CustomIO.print("sd\n", .{"Detected Vulkan error: ", err});
             exit();
         }
     }

@@ -1,8 +1,7 @@
 const std = @import("std");
+const builtin = @import("builtin");
+const native_os = builtin.os.tag;
 const heap = std.heap;
-
-// pub var jdz = jdz_allocator.JdzAllocator(.{}).init();
-// pub var allocator = jdz.allocator();
 
 pub var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
 pub const arenaAllocator = arena.allocator();
@@ -17,6 +16,14 @@ pub var allocator: std.mem.Allocator = undefined;
 
 
 // pub const stdout = std.io.getStdOut().writer();
-pub var stdout: std.fs.File.Writer = undefined;
+
+// pub var stdoutFile: std.fs.File = undefined;
+// pub var stdout: std.fs.File.Writer = undefined;
+// comptime
+// {
+//     if(native_os == .linux)
+//         stdoutFile = std.io.getStdOut();
+// }
+
 // pub var bw = std.io.bufferedWriter(stdout_file);
 // pub const stdout = bw.writer();

@@ -43,8 +43,11 @@ void main()
     vec3 position = pushConstants.hexVertexBuffer.vertices[gl_VertexIndex];
     HexData data = pushConstants.hexDataBuffer.data[gl_InstanceIndex];
 
-	gl_Position = vec4(position+vec3(data.position, 0), 1.0) * ubo.view_proj;
-	outPos = vec2(position.x, position.y)*sqrt(3.0)/6;
+// 	gl_Position = vec4(position+vec3(data.position, 0), 1.0) * ubo.view_proj;
+// 	outPos = position.xy*sqrt(3.0)/6;
+    vec2 globalPos = position.xy+data.position;
+    gl_Position = vec4(globalPos, 0, 1) * ubo.view_proj;
+    outPos = globalPos*(sqrt(3.0)/6);
     outTextureIndex = data.textureIndex;
 //     pushConstants.hexDataBuffer.data[0].textureIndex = atomicAdd(pushConstants.hexDataBuffer.data[0].textureIndex, 1);
 }

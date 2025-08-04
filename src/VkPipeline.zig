@@ -1,32 +1,38 @@
 const std = @import("std");
-const print = std.debug.print;
-const exit = std.process.exit;
-
-const GlobalState = @import("GlobalState.zig");
-
-// const VulkanInclude = @import("VulkanInclude.zig");
+const linux = std.os.linux;
 const Vulkan = @import("Vulkan.zig");
 
+const GlobalState = @import("GlobalState.zig");
 const VulkanGlobalState = @import("VulkanGlobalState.zig");
 const VK_CHECK = VulkanGlobalState.VK_CHECK;
 
+const PageAllocator = @import("PageAllocator.zig");
+const CustomFS = @import("CustomFS.zig");
+const CustomThreads = @import("CustomThreads.zig");
+const exit = CustomThreads.exit;
+
 pub fn createShaderModule(path: [*:0]const u8) Vulkan.VkShaderModule
 {
-    const file: std.fs.File = std.fs.cwd().openFileZ(path, .{}) catch
-    {
-        print("shader not found!\n", .{});exit(0);
-    };// catch exit(0)
-    defer file.close();
+//     const file: std.fs.File = std.fs.cwd().openFileZ(path, .{}) catch
+    const file = CustomFS.open(path, .{.ACCMODE = .RDONLY});
+//     const string = "shader not found!\n";
+//     _ = CustomFS.write(1, string, string.len);
+//     exit();
+    var fileStat: linux.Stat = undefined;
+    _ = CustomFS.fstat(file, &fileStat);
+    const fileSize: u64 = @intCast(fileStat.size);
+//     var fileBuffer: [*]u8 = (GlobalState.arenaAllocator.alignedAlloc(u8, 4, fileSize + ((4 - fileSize % 4) % 4)) catch unreachable).ptr;
+//     _ = file.read(fileBuffer[0..fileSize]) catch unreachable;
 
-    const stat = file.stat() catch unreachable;
-    const file_size: usize = stat.size;
-    var fileBuffer: [*]u8 = (GlobalState.arenaAllocator.alignedAlloc(u8, 4, file_size + ((4 - file_size % 4) % 4)) catch unreachable).ptr;
-    _ = file.read(fileBuffer[0..file_size]) catch unreachable;
+    const fileBuffer = PageAllocator.map(fileSize);
+    _ = CustomFS.read(file, fileBuffer, fileSize);
+    _ = CustomFS.close(file);
+    defer PageAllocator.unmap(fileBuffer, fileSize);
 
     const createInfo = Vulkan.VkShaderModuleCreateInfo
     {
         .sType = Vulkan.VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-        .codeSize = file_size,
+        .codeSize = fileSize,
         .pCode = @ptrCast(@alignCast(fileBuffer)),
     };
 

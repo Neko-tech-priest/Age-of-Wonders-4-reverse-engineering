@@ -215,10 +215,6 @@ pub extern fn __stpncpy(noalias __dest: [*c]u8, noalias __src: [*c]const u8, __n
 pub extern fn stpncpy(__dest: [*c]u8, __src: [*c]const u8, __n: c_ulong) [*c]u8;
 pub extern fn strlcpy(__dest: [*c]u8, __src: [*c]const u8, __n: c_ulong) c_ulong;
 pub extern fn strlcat(__dest: [*c]u8, __src: [*c]const u8, __n: c_ulong) c_ulong;
-// /usr/include/bits/floatn.h:83:24: warning: unsupported type: 'Complex'
-pub const __cfloat128 = @compileError("unable to resolve typedef child type");
-// /usr/include/bits/floatn.h:83:24
-pub const _Float128 = f128;
 pub const _Float32 = f32;
 pub const _Float64 = f64;
 pub const _Float32x = f64;
@@ -370,10 +366,10 @@ pub extern fn SDL_malloc(size: usize) ?*anyopaque;
 pub extern fn SDL_calloc(nmemb: usize, size: usize) ?*anyopaque;
 pub extern fn SDL_realloc(mem: ?*anyopaque, size: usize) ?*anyopaque;
 pub extern fn SDL_free(mem: ?*anyopaque) void;
-pub const SDL_malloc_func = ?*const fn (usize) callconv(.c) ?*anyopaque;
-pub const SDL_calloc_func = ?*const fn (usize, usize) callconv(.c) ?*anyopaque;
-pub const SDL_realloc_func = ?*const fn (?*anyopaque, usize) callconv(.c) ?*anyopaque;
-pub const SDL_free_func = ?*const fn (?*anyopaque) callconv(.c) void;
+pub const SDL_malloc_func = ?*const fn (usize) callconv(.C) ?*anyopaque;
+pub const SDL_calloc_func = ?*const fn (usize, usize) callconv(.C) ?*anyopaque;
+pub const SDL_realloc_func = ?*const fn (?*anyopaque, usize) callconv(.C) ?*anyopaque;
+pub const SDL_free_func = ?*const fn (?*anyopaque) callconv(.C) void;
 pub extern fn SDL_GetOriginalMemoryFunctions(malloc_func: [*c]SDL_malloc_func, calloc_func: [*c]SDL_calloc_func, realloc_func: [*c]SDL_realloc_func, free_func: [*c]SDL_free_func) void;
 pub extern fn SDL_GetMemoryFunctions(malloc_func: [*c]SDL_malloc_func, calloc_func: [*c]SDL_calloc_func, realloc_func: [*c]SDL_realloc_func, free_func: [*c]SDL_free_func) void;
 pub extern fn SDL_SetMemoryFunctions(malloc_func: SDL_malloc_func, calloc_func: SDL_calloc_func, realloc_func: SDL_realloc_func, free_func: SDL_free_func) bool;
@@ -393,10 +389,10 @@ pub extern fn SDL_getenv(name: [*c]const u8) [*c]const u8;
 pub extern fn SDL_getenv_unsafe(name: [*c]const u8) [*c]const u8;
 pub extern fn SDL_setenv_unsafe(name: [*c]const u8, value: [*c]const u8, overwrite: c_int) c_int;
 pub extern fn SDL_unsetenv_unsafe(name: [*c]const u8) c_int;
-pub const SDL_CompareCallback = ?*const fn (?*const anyopaque, ?*const anyopaque) callconv(.c) c_int;
+pub const SDL_CompareCallback = ?*const fn (?*const anyopaque, ?*const anyopaque) callconv(.C) c_int;
 pub extern fn SDL_qsort(base: ?*anyopaque, nmemb: usize, size: usize, compare: SDL_CompareCallback) void;
 pub extern fn SDL_bsearch(key: ?*const anyopaque, base: ?*const anyopaque, nmemb: usize, size: usize, compare: SDL_CompareCallback) ?*anyopaque;
-pub const SDL_CompareCallback_r = ?*const fn (?*anyopaque, ?*const anyopaque, ?*const anyopaque) callconv(.c) c_int;
+pub const SDL_CompareCallback_r = ?*const fn (?*anyopaque, ?*const anyopaque, ?*const anyopaque) callconv(.C) c_int;
 pub extern fn SDL_qsort_r(base: ?*anyopaque, nmemb: usize, size: usize, compare: SDL_CompareCallback_r, userdata: ?*anyopaque) void;
 pub extern fn SDL_bsearch_r(key: ?*const anyopaque, base: ?*const anyopaque, nmemb: usize, size: usize, compare: SDL_CompareCallback_r, userdata: ?*anyopaque) ?*anyopaque;
 pub extern fn SDL_abs(x: c_int) c_int;
@@ -577,11 +573,11 @@ pub inline fn SDL_size_add_check_overflow(arg_a: usize, arg_b: usize, arg_ret: [
     ret.* = a +% b;
     return @as(c_int, 1) != 0;
 }
-// /usr/include/SDL3/SDL_stdinc.h:6100:13: warning: TODO implement function '__builtin_add_overflow' in std.zig.c_builtins
+// /usr/include/SDL3/SDL_stdinc.h:6085:13: warning: TODO implement function '__builtin_add_overflow' in std.zig.c_builtins
 
-// /usr/include/SDL3/SDL_stdinc.h:6098:23: warning: unable to translate function, demoted to extern
+// /usr/include/SDL3/SDL_stdinc.h:6083:23: warning: unable to translate function, demoted to extern
 pub extern fn SDL_size_add_check_overflow_builtin(arg_a: usize, arg_b: usize, arg_ret: [*c]usize) bool;
-pub const SDL_FunctionPointer = ?*const fn () callconv(.c) void;
+pub const SDL_FunctionPointer = ?*const fn () callconv(.C) void;
 pub const SDL_ASSERTION_RETRY: c_int = 0;
 pub const SDL_ASSERTION_BREAK: c_int = 1;
 pub const SDL_ASSERTION_ABORT: c_int = 2;
@@ -600,7 +596,7 @@ pub const struct_SDL_AssertData = extern struct {
 };
 pub const SDL_AssertData = struct_SDL_AssertData;
 pub extern fn SDL_ReportAssertion(data: [*c]SDL_AssertData, func: [*c]const u8, file: [*c]const u8, line: c_int) SDL_AssertState;
-pub const SDL_AssertionHandler = ?*const fn ([*c]const SDL_AssertData, ?*anyopaque) callconv(.c) SDL_AssertState;
+pub const SDL_AssertionHandler = ?*const fn ([*c]const SDL_AssertData, ?*anyopaque) callconv(.C) SDL_AssertState;
 pub extern fn SDL_SetAssertionHandler(handler: SDL_AssertionHandler, userdata: ?*anyopaque) void;
 pub extern fn SDL_GetDefaultAssertionHandler() SDL_AssertionHandler;
 pub extern fn SDL_GetAssertionHandler(puserdata: [*c]?*anyopaque) SDL_AssertionHandler;
@@ -666,32 +662,32 @@ pub extern fn SDL_GetAtomicU32(a: [*c]SDL_AtomicU32) Uint32;
 pub extern fn SDL_CompareAndSwapAtomicPointer(a: [*c]?*anyopaque, oldval: ?*anyopaque, newval: ?*anyopaque) bool;
 pub extern fn SDL_SetAtomicPointer(a: [*c]?*anyopaque, v: ?*anyopaque) ?*anyopaque;
 pub extern fn SDL_GetAtomicPointer(a: [*c]?*anyopaque) ?*anyopaque;
-pub fn __bswap_16(arg___bsx: __uint16_t) callconv(.c) __uint16_t {
+pub fn __bswap_16(arg___bsx: __uint16_t) callconv(.C) __uint16_t {
     var __bsx = arg___bsx;
     _ = &__bsx;
     return @as(__uint16_t, @bitCast(@as(c_short, @truncate(((@as(c_int, @bitCast(@as(c_uint, __bsx))) >> @intCast(8)) & @as(c_int, 255)) | ((@as(c_int, @bitCast(@as(c_uint, __bsx))) & @as(c_int, 255)) << @intCast(8))))));
 }
-pub fn __bswap_32(arg___bsx: __uint32_t) callconv(.c) __uint32_t {
+pub fn __bswap_32(arg___bsx: __uint32_t) callconv(.C) __uint32_t {
     var __bsx = arg___bsx;
     _ = &__bsx;
     return ((((__bsx & @as(c_uint, 4278190080)) >> @intCast(24)) | ((__bsx & @as(c_uint, 16711680)) >> @intCast(8))) | ((__bsx & @as(c_uint, 65280)) << @intCast(8))) | ((__bsx & @as(c_uint, 255)) << @intCast(24));
 }
-pub fn __bswap_64(arg___bsx: __uint64_t) callconv(.c) __uint64_t {
+pub fn __bswap_64(arg___bsx: __uint64_t) callconv(.C) __uint64_t {
     var __bsx = arg___bsx;
     _ = &__bsx;
     return @as(__uint64_t, @bitCast(@as(c_ulong, @truncate(((((((((@as(c_ulonglong, @bitCast(@as(c_ulonglong, __bsx))) & @as(c_ulonglong, 18374686479671623680)) >> @intCast(56)) | ((@as(c_ulonglong, @bitCast(@as(c_ulonglong, __bsx))) & @as(c_ulonglong, 71776119061217280)) >> @intCast(40))) | ((@as(c_ulonglong, @bitCast(@as(c_ulonglong, __bsx))) & @as(c_ulonglong, 280375465082880)) >> @intCast(24))) | ((@as(c_ulonglong, @bitCast(@as(c_ulonglong, __bsx))) & @as(c_ulonglong, 1095216660480)) >> @intCast(8))) | ((@as(c_ulonglong, @bitCast(@as(c_ulonglong, __bsx))) & @as(c_ulonglong, 4278190080)) << @intCast(8))) | ((@as(c_ulonglong, @bitCast(@as(c_ulonglong, __bsx))) & @as(c_ulonglong, 16711680)) << @intCast(24))) | ((@as(c_ulonglong, @bitCast(@as(c_ulonglong, __bsx))) & @as(c_ulonglong, 65280)) << @intCast(40))) | ((@as(c_ulonglong, @bitCast(@as(c_ulonglong, __bsx))) & @as(c_ulonglong, 255)) << @intCast(56))))));
 }
-pub fn __uint16_identity(arg___x: __uint16_t) callconv(.c) __uint16_t {
+pub fn __uint16_identity(arg___x: __uint16_t) callconv(.C) __uint16_t {
     var __x = arg___x;
     _ = &__x;
     return __x;
 }
-pub fn __uint32_identity(arg___x: __uint32_t) callconv(.c) __uint32_t {
+pub fn __uint32_identity(arg___x: __uint32_t) callconv(.C) __uint32_t {
     var __x = arg___x;
     _ = &__x;
     return __x;
 }
-pub fn __uint64_identity(arg___x: __uint64_t) callconv(.c) __uint64_t {
+pub fn __uint64_identity(arg___x: __uint64_t) callconv(.C) __uint64_t {
     var __x = arg___x;
     _ = &__x;
     return __x;
@@ -729,7 +725,7 @@ pub extern fn SDL_CreateProperties() SDL_PropertiesID;
 pub extern fn SDL_CopyProperties(src: SDL_PropertiesID, dst: SDL_PropertiesID) bool;
 pub extern fn SDL_LockProperties(props: SDL_PropertiesID) bool;
 pub extern fn SDL_UnlockProperties(props: SDL_PropertiesID) void;
-pub const SDL_CleanupPropertyCallback = ?*const fn (?*anyopaque, ?*anyopaque) callconv(.c) void;
+pub const SDL_CleanupPropertyCallback = ?*const fn (?*anyopaque, ?*anyopaque) callconv(.C) void;
 pub extern fn SDL_SetPointerPropertyWithCleanup(props: SDL_PropertiesID, name: [*c]const u8, value: ?*anyopaque, cleanup: SDL_CleanupPropertyCallback, userdata: ?*anyopaque) bool;
 pub extern fn SDL_SetPointerProperty(props: SDL_PropertiesID, name: [*c]const u8, value: ?*anyopaque) bool;
 pub extern fn SDL_SetStringProperty(props: SDL_PropertiesID, name: [*c]const u8, value: [*c]const u8) bool;
@@ -744,7 +740,7 @@ pub extern fn SDL_GetNumberProperty(props: SDL_PropertiesID, name: [*c]const u8,
 pub extern fn SDL_GetFloatProperty(props: SDL_PropertiesID, name: [*c]const u8, default_value: f32) f32;
 pub extern fn SDL_GetBooleanProperty(props: SDL_PropertiesID, name: [*c]const u8, default_value: bool) bool;
 pub extern fn SDL_ClearProperty(props: SDL_PropertiesID, name: [*c]const u8) bool;
-pub const SDL_EnumeratePropertiesCallback = ?*const fn (?*anyopaque, SDL_PropertiesID, [*c]const u8) callconv(.c) void;
+pub const SDL_EnumeratePropertiesCallback = ?*const fn (?*anyopaque, SDL_PropertiesID, [*c]const u8) callconv(.C) void;
 pub extern fn SDL_EnumerateProperties(props: SDL_PropertiesID, callback: SDL_EnumeratePropertiesCallback, userdata: ?*anyopaque) bool;
 pub extern fn SDL_DestroyProperties(props: SDL_PropertiesID) void;
 pub const struct_SDL_Thread = opaque {};
@@ -763,7 +759,7 @@ pub const SDL_THREAD_DETACHED: c_int = 2;
 pub const SDL_THREAD_COMPLETE: c_int = 3;
 pub const enum_SDL_ThreadState = c_uint;
 pub const SDL_ThreadState = enum_SDL_ThreadState;
-pub const SDL_ThreadFunction = ?*const fn (?*anyopaque) callconv(.c) c_int;
+pub const SDL_ThreadFunction = ?*const fn (?*anyopaque) callconv(.C) c_int;
 pub extern fn SDL_CreateThreadRuntime(@"fn": SDL_ThreadFunction, name: [*c]const u8, data: ?*anyopaque, pfnBeginThread: SDL_FunctionPointer, pfnEndThread: SDL_FunctionPointer) ?*SDL_Thread;
 pub extern fn SDL_CreateThreadWithPropertiesRuntime(props: SDL_PropertiesID, pfnBeginThread: SDL_FunctionPointer, pfnEndThread: SDL_FunctionPointer) ?*SDL_Thread;
 pub extern fn SDL_GetThreadName(thread: ?*SDL_Thread) [*c]const u8;
@@ -774,7 +770,7 @@ pub extern fn SDL_WaitThread(thread: ?*SDL_Thread, status: [*c]c_int) void;
 pub extern fn SDL_GetThreadState(thread: ?*SDL_Thread) SDL_ThreadState;
 pub extern fn SDL_DetachThread(thread: ?*SDL_Thread) void;
 pub extern fn SDL_GetTLS(id: [*c]SDL_TLSID) ?*anyopaque;
-pub const SDL_TLSDestructorCallback = ?*const fn (?*anyopaque) callconv(.c) void;
+pub const SDL_TLSDestructorCallback = ?*const fn (?*anyopaque) callconv(.C) void;
 pub extern fn SDL_SetTLS(id: [*c]SDL_TLSID, value: ?*const anyopaque, destructor: SDL_TLSDestructorCallback) bool;
 pub extern fn SDL_CleanupTLS() void;
 pub const struct_SDL_Mutex = opaque {};
@@ -840,12 +836,12 @@ pub const enum_SDL_IOWhence = c_uint;
 pub const SDL_IOWhence = enum_SDL_IOWhence;
 pub const struct_SDL_IOStreamInterface = extern struct {
     version: Uint32 = @import("std").mem.zeroes(Uint32),
-    size: ?*const fn (?*anyopaque) callconv(.c) Sint64 = @import("std").mem.zeroes(?*const fn (?*anyopaque) callconv(.c) Sint64),
-    seek: ?*const fn (?*anyopaque, Sint64, SDL_IOWhence) callconv(.c) Sint64 = @import("std").mem.zeroes(?*const fn (?*anyopaque, Sint64, SDL_IOWhence) callconv(.c) Sint64),
-    read: ?*const fn (?*anyopaque, ?*anyopaque, usize, [*c]SDL_IOStatus) callconv(.c) usize = @import("std").mem.zeroes(?*const fn (?*anyopaque, ?*anyopaque, usize, [*c]SDL_IOStatus) callconv(.c) usize),
-    write: ?*const fn (?*anyopaque, ?*const anyopaque, usize, [*c]SDL_IOStatus) callconv(.c) usize = @import("std").mem.zeroes(?*const fn (?*anyopaque, ?*const anyopaque, usize, [*c]SDL_IOStatus) callconv(.c) usize),
-    flush: ?*const fn (?*anyopaque, [*c]SDL_IOStatus) callconv(.c) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, [*c]SDL_IOStatus) callconv(.c) bool),
-    close: ?*const fn (?*anyopaque) callconv(.c) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque) callconv(.c) bool),
+    size: ?*const fn (?*anyopaque) callconv(.C) Sint64 = @import("std").mem.zeroes(?*const fn (?*anyopaque) callconv(.C) Sint64),
+    seek: ?*const fn (?*anyopaque, Sint64, SDL_IOWhence) callconv(.C) Sint64 = @import("std").mem.zeroes(?*const fn (?*anyopaque, Sint64, SDL_IOWhence) callconv(.C) Sint64),
+    read: ?*const fn (?*anyopaque, ?*anyopaque, usize, [*c]SDL_IOStatus) callconv(.C) usize = @import("std").mem.zeroes(?*const fn (?*anyopaque, ?*anyopaque, usize, [*c]SDL_IOStatus) callconv(.C) usize),
+    write: ?*const fn (?*anyopaque, ?*const anyopaque, usize, [*c]SDL_IOStatus) callconv(.C) usize = @import("std").mem.zeroes(?*const fn (?*anyopaque, ?*const anyopaque, usize, [*c]SDL_IOStatus) callconv(.C) usize),
+    flush: ?*const fn (?*anyopaque, [*c]SDL_IOStatus) callconv(.C) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, [*c]SDL_IOStatus) callconv(.C) bool),
+    close: ?*const fn (?*anyopaque) callconv(.C) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque) callconv(.C) bool),
 };
 pub const SDL_IOStreamInterface = struct_SDL_IOStreamInterface;
 // /usr/include/SDL3/SDL_stdinc.h:203:42: warning: ignoring StaticAssert declaration
@@ -933,9 +929,9 @@ pub extern fn SDL_GetAudioDeviceChannelMap(devid: SDL_AudioDeviceID, count: [*c]
 pub extern fn SDL_OpenAudioDevice(devid: SDL_AudioDeviceID, spec: [*c]const SDL_AudioSpec) SDL_AudioDeviceID;
 pub extern fn SDL_IsAudioDevicePhysical(devid: SDL_AudioDeviceID) bool;
 pub extern fn SDL_IsAudioDevicePlayback(devid: SDL_AudioDeviceID) bool;
-pub extern fn SDL_PauseAudioDevice(devid: SDL_AudioDeviceID) bool;
-pub extern fn SDL_ResumeAudioDevice(devid: SDL_AudioDeviceID) bool;
-pub extern fn SDL_AudioDevicePaused(devid: SDL_AudioDeviceID) bool;
+pub extern fn SDL_PauseAudioDevice(dev: SDL_AudioDeviceID) bool;
+pub extern fn SDL_ResumeAudioDevice(dev: SDL_AudioDeviceID) bool;
+pub extern fn SDL_AudioDevicePaused(dev: SDL_AudioDeviceID) bool;
 pub extern fn SDL_GetAudioDeviceGain(devid: SDL_AudioDeviceID) f32;
 pub extern fn SDL_SetAudioDeviceGain(devid: SDL_AudioDeviceID, gain: f32) bool;
 pub extern fn SDL_CloseAudioDevice(devid: SDL_AudioDeviceID) void;
@@ -967,12 +963,12 @@ pub extern fn SDL_ResumeAudioStreamDevice(stream: ?*SDL_AudioStream) bool;
 pub extern fn SDL_AudioStreamDevicePaused(stream: ?*SDL_AudioStream) bool;
 pub extern fn SDL_LockAudioStream(stream: ?*SDL_AudioStream) bool;
 pub extern fn SDL_UnlockAudioStream(stream: ?*SDL_AudioStream) bool;
-pub const SDL_AudioStreamCallback = ?*const fn (?*anyopaque, ?*SDL_AudioStream, c_int, c_int) callconv(.c) void;
+pub const SDL_AudioStreamCallback = ?*const fn (?*anyopaque, ?*SDL_AudioStream, c_int, c_int) callconv(.C) void;
 pub extern fn SDL_SetAudioStreamGetCallback(stream: ?*SDL_AudioStream, callback: SDL_AudioStreamCallback, userdata: ?*anyopaque) bool;
 pub extern fn SDL_SetAudioStreamPutCallback(stream: ?*SDL_AudioStream, callback: SDL_AudioStreamCallback, userdata: ?*anyopaque) bool;
 pub extern fn SDL_DestroyAudioStream(stream: ?*SDL_AudioStream) void;
 pub extern fn SDL_OpenAudioDeviceStream(devid: SDL_AudioDeviceID, spec: [*c]const SDL_AudioSpec, callback: SDL_AudioStreamCallback, userdata: ?*anyopaque) ?*SDL_AudioStream;
-pub const SDL_AudioPostmixCallback = ?*const fn (?*anyopaque, [*c]const SDL_AudioSpec, [*c]f32, c_int) callconv(.c) void;
+pub const SDL_AudioPostmixCallback = ?*const fn (?*anyopaque, [*c]const SDL_AudioSpec, [*c]f32, c_int) callconv(.C) void;
 pub extern fn SDL_SetAudioPostmixCallback(devid: SDL_AudioDeviceID, callback: SDL_AudioPostmixCallback, userdata: ?*anyopaque) bool;
 pub extern fn SDL_LoadWAV_IO(src: ?*SDL_IOStream, closeio: bool, spec: [*c]SDL_AudioSpec, audio_buf: [*c][*c]Uint8, audio_len: [*c]Uint32) bool;
 pub extern fn SDL_LoadWAV(path: [*c]const u8, spec: [*c]SDL_AudioSpec, audio_buf: [*c][*c]Uint8, audio_len: [*c]Uint32) bool;
@@ -1132,7 +1128,6 @@ pub const SDL_PIXELFORMAT_NV12: c_int = 842094158;
 pub const SDL_PIXELFORMAT_NV21: c_int = 825382478;
 pub const SDL_PIXELFORMAT_P010: c_int = 808530000;
 pub const SDL_PIXELFORMAT_EXTERNAL_OES: c_int = 542328143;
-pub const SDL_PIXELFORMAT_MJPG: c_int = 1196444237;
 pub const SDL_PIXELFORMAT_RGBA32: c_int = 376840196;
 pub const SDL_PIXELFORMAT_ARGB32: c_int = 377888772;
 pub const SDL_PIXELFORMAT_BGRA32: c_int = 372645892;
@@ -1349,12 +1344,11 @@ pub inline fn SDL_RectEmptyFloat(arg_r: [*c]const SDL_FRect) bool {
     _ = &r;
     return (if ((!(r != null) or (r.*.w < 0.0)) or (r.*.h < 0.0)) @as(c_int, 1) else @as(c_int, 0)) != 0;
 }
-pub inline fn SDL_RectsEqualEpsilon(arg_a: [*c]const SDL_FRect, arg_b: [*c]const SDL_FRect, arg_epsilon: f32) bool {
+pub inline fn SDL_RectsEqualEpsilon(arg_a: [*c]const SDL_FRect, arg_b: [*c]const SDL_FRect, epsilon: f32) bool {
     var a = arg_a;
     _ = &a;
     var b = arg_b;
     _ = &b;
-    var epsilon = arg_epsilon;
     _ = &epsilon;
     return (if (((a != null) and (b != null)) and ((a == b) or ((((SDL_fabsf(a.*.x - b.*.x) <= epsilon) and (SDL_fabsf(a.*.y - b.*.y) <= epsilon)) and (SDL_fabsf(a.*.w - b.*.w) <= epsilon)) and (SDL_fabsf(a.*.h - b.*.h) <= epsilon)))) @as(c_int, 1) else @as(c_int, 0)) != 0;
 }
@@ -1371,10 +1365,9 @@ pub extern fn SDL_GetRectUnionFloat(A: [*c]const SDL_FRect, B: [*c]const SDL_FRe
 pub extern fn SDL_GetRectEnclosingPointsFloat(points: [*c]const SDL_FPoint, count: c_int, clip: [*c]const SDL_FRect, result: [*c]SDL_FRect) bool;
 pub extern fn SDL_GetRectAndLineIntersectionFloat(rect: [*c]const SDL_FRect, X1: [*c]f32, Y1: [*c]f32, X2: [*c]f32, Y2: [*c]f32) bool;
 pub const SDL_SurfaceFlags = Uint32;
-pub const SDL_SCALEMODE_INVALID: c_int = -1;
 pub const SDL_SCALEMODE_NEAREST: c_int = 0;
 pub const SDL_SCALEMODE_LINEAR: c_int = 1;
-pub const enum_SDL_ScaleMode = c_int;
+pub const enum_SDL_ScaleMode = c_uint;
 pub const SDL_ScaleMode = enum_SDL_ScaleMode;
 pub const SDL_FLIP_NONE: c_int = 0;
 pub const SDL_FLIP_HORIZONTAL: c_int = 1;
@@ -1440,7 +1433,6 @@ pub extern fn SDL_BlitSurface(src: [*c]SDL_Surface, srcrect: [*c]const SDL_Rect,
 pub extern fn SDL_BlitSurfaceUnchecked(src: [*c]SDL_Surface, srcrect: [*c]const SDL_Rect, dst: [*c]SDL_Surface, dstrect: [*c]const SDL_Rect) bool;
 pub extern fn SDL_BlitSurfaceScaled(src: [*c]SDL_Surface, srcrect: [*c]const SDL_Rect, dst: [*c]SDL_Surface, dstrect: [*c]const SDL_Rect, scaleMode: SDL_ScaleMode) bool;
 pub extern fn SDL_BlitSurfaceUncheckedScaled(src: [*c]SDL_Surface, srcrect: [*c]const SDL_Rect, dst: [*c]SDL_Surface, dstrect: [*c]const SDL_Rect, scaleMode: SDL_ScaleMode) bool;
-pub extern fn SDL_StretchSurface(src: [*c]SDL_Surface, srcrect: [*c]const SDL_Rect, dst: [*c]SDL_Surface, dstrect: [*c]const SDL_Rect, scaleMode: SDL_ScaleMode) bool;
 pub extern fn SDL_BlitSurfaceTiled(src: [*c]SDL_Surface, srcrect: [*c]const SDL_Rect, dst: [*c]SDL_Surface, dstrect: [*c]const SDL_Rect) bool;
 pub extern fn SDL_BlitSurfaceTiledWithScale(src: [*c]SDL_Surface, srcrect: [*c]const SDL_Rect, scale: f32, scaleMode: SDL_ScaleMode, dst: [*c]SDL_Surface, dstrect: [*c]const SDL_Rect) bool;
 pub extern fn SDL_BlitSurface9Grid(src: [*c]SDL_Surface, srcrect: [*c]const SDL_Rect, left_width: c_int, right_width: c_int, top_height: c_int, bottom_height: c_int, scale: f32, scaleMode: SDL_ScaleMode, dst: [*c]SDL_Surface, dstrect: [*c]const SDL_Rect) bool;
@@ -1471,7 +1463,7 @@ pub extern fn SDL_GetNumCameraDrivers() c_int;
 pub extern fn SDL_GetCameraDriver(index: c_int) [*c]const u8;
 pub extern fn SDL_GetCurrentCameraDriver() [*c]const u8;
 pub extern fn SDL_GetCameras(count: [*c]c_int) [*c]SDL_CameraID;
-pub extern fn SDL_GetCameraSupportedFormats(instance_id: SDL_CameraID, count: [*c]c_int) [*c][*c]SDL_CameraSpec;
+pub extern fn SDL_GetCameraSupportedFormats(devid: SDL_CameraID, count: [*c]c_int) [*c][*c]SDL_CameraSpec;
 pub extern fn SDL_GetCameraName(instance_id: SDL_CameraID) [*c]const u8;
 pub extern fn SDL_GetCameraPosition(instance_id: SDL_CameraID) SDL_CameraPosition;
 pub extern fn SDL_OpenCamera(instance_id: SDL_CameraID, spec: [*c]const SDL_CameraSpec) ?*SDL_Camera;
@@ -1488,8 +1480,8 @@ pub extern fn SDL_HasClipboardText() bool;
 pub extern fn SDL_SetPrimarySelectionText(text: [*c]const u8) bool;
 pub extern fn SDL_GetPrimarySelectionText() [*c]u8;
 pub extern fn SDL_HasPrimarySelectionText() bool;
-pub const SDL_ClipboardDataCallback = ?*const fn (?*anyopaque, [*c]const u8, [*c]usize) callconv(.c) ?*const anyopaque;
-pub const SDL_ClipboardCleanupCallback = ?*const fn (?*anyopaque) callconv(.c) void;
+pub const SDL_ClipboardDataCallback = ?*const fn (?*anyopaque, [*c]const u8, [*c]usize) callconv(.C) ?*const anyopaque;
+pub const SDL_ClipboardCleanupCallback = ?*const fn (?*anyopaque) callconv(.C) void;
 pub extern fn SDL_SetClipboardData(callback: SDL_ClipboardDataCallback, cleanup: SDL_ClipboardCleanupCallback, userdata: ?*anyopaque, mime_types: [*c][*c]const u8, num_mime_types: usize) bool;
 pub extern fn SDL_ClearClipboardData() bool;
 pub extern fn SDL_GetClipboardData(mime_type: [*c]const u8, size: [*c]usize) ?*anyopaque;
@@ -1556,8 +1548,8 @@ pub const SDL_EGLConfig = ?*anyopaque;
 pub const SDL_EGLSurface = ?*anyopaque;
 pub const SDL_EGLAttrib = isize;
 pub const SDL_EGLint = c_int;
-pub const SDL_EGLAttribArrayCallback = ?*const fn (?*anyopaque) callconv(.c) [*c]SDL_EGLAttrib;
-pub const SDL_EGLIntArrayCallback = ?*const fn (?*anyopaque, SDL_EGLDisplay, SDL_EGLConfig) callconv(.c) [*c]SDL_EGLint;
+pub const SDL_EGLAttribArrayCallback = ?*const fn (?*anyopaque) callconv(.C) [*c]SDL_EGLAttrib;
+pub const SDL_EGLIntArrayCallback = ?*const fn (?*anyopaque, SDL_EGLDisplay, SDL_EGLConfig) callconv(.C) [*c]SDL_EGLint;
 pub const SDL_GL_RED_SIZE: c_int = 0;
 pub const SDL_GL_GREEN_SIZE: c_int = 1;
 pub const SDL_GL_BLUE_SIZE: c_int = 2;
@@ -1686,7 +1678,7 @@ pub const SDL_HITTEST_RESIZE_BOTTOMLEFT: c_int = 8;
 pub const SDL_HITTEST_RESIZE_LEFT: c_int = 9;
 pub const enum_SDL_HitTestResult = c_uint;
 pub const SDL_HitTestResult = enum_SDL_HitTestResult;
-pub const SDL_HitTest = ?*const fn (?*SDL_Window, [*c]const SDL_Point, ?*anyopaque) callconv(.c) SDL_HitTestResult;
+pub const SDL_HitTest = ?*const fn (?*SDL_Window, [*c]const SDL_Point, ?*anyopaque) callconv(.C) SDL_HitTestResult;
 pub extern fn SDL_SetWindowHitTest(window: ?*SDL_Window, callback: SDL_HitTest, callback_data: ?*anyopaque) bool;
 pub extern fn SDL_SetWindowShape(window: ?*SDL_Window, shape: [*c]SDL_Surface) bool;
 pub extern fn SDL_FlashWindow(window: ?*SDL_Window, operation: SDL_FlashOperation) bool;
@@ -1719,7 +1711,7 @@ pub const struct_SDL_DialogFileFilter = extern struct {
     pattern: [*c]const u8 = @import("std").mem.zeroes([*c]const u8),
 };
 pub const SDL_DialogFileFilter = struct_SDL_DialogFileFilter;
-pub const SDL_DialogFileCallback = ?*const fn (?*anyopaque, [*c]const [*c]const u8, c_int) callconv(.c) void;
+pub const SDL_DialogFileCallback = ?*const fn (?*anyopaque, [*c]const [*c]const u8, c_int) callconv(.C) void;
 pub extern fn SDL_ShowOpenFileDialog(callback: SDL_DialogFileCallback, userdata: ?*anyopaque, window: ?*SDL_Window, filters: [*c]const SDL_DialogFileFilter, nfilters: c_int, default_location: [*c]const u8, allow_many: bool) void;
 pub extern fn SDL_ShowSaveFileDialog(callback: SDL_DialogFileCallback, userdata: ?*anyopaque, window: ?*SDL_Window, filters: [*c]const SDL_DialogFileFilter, nfilters: c_int, default_location: [*c]const u8) void;
 pub extern fn SDL_ShowOpenFolderDialog(callback: SDL_DialogFileCallback, userdata: ?*anyopaque, window: ?*SDL_Window, default_location: [*c]const u8, allow_many: bool) void;
@@ -1837,14 +1829,14 @@ pub const struct_SDL_VirtualJoystickDesc = extern struct {
     touchpads: [*c]const SDL_VirtualJoystickTouchpadDesc = @import("std").mem.zeroes([*c]const SDL_VirtualJoystickTouchpadDesc),
     sensors: [*c]const SDL_VirtualJoystickSensorDesc = @import("std").mem.zeroes([*c]const SDL_VirtualJoystickSensorDesc),
     userdata: ?*anyopaque = @import("std").mem.zeroes(?*anyopaque),
-    Update: ?*const fn (?*anyopaque) callconv(.c) void = @import("std").mem.zeroes(?*const fn (?*anyopaque) callconv(.c) void),
-    SetPlayerIndex: ?*const fn (?*anyopaque, c_int) callconv(.c) void = @import("std").mem.zeroes(?*const fn (?*anyopaque, c_int) callconv(.c) void),
-    Rumble: ?*const fn (?*anyopaque, Uint16, Uint16) callconv(.c) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, Uint16, Uint16) callconv(.c) bool),
-    RumbleTriggers: ?*const fn (?*anyopaque, Uint16, Uint16) callconv(.c) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, Uint16, Uint16) callconv(.c) bool),
-    SetLED: ?*const fn (?*anyopaque, Uint8, Uint8, Uint8) callconv(.c) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, Uint8, Uint8, Uint8) callconv(.c) bool),
-    SendEffect: ?*const fn (?*anyopaque, ?*const anyopaque, c_int) callconv(.c) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, ?*const anyopaque, c_int) callconv(.c) bool),
-    SetSensorsEnabled: ?*const fn (?*anyopaque, bool) callconv(.c) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, bool) callconv(.c) bool),
-    Cleanup: ?*const fn (?*anyopaque) callconv(.c) void = @import("std").mem.zeroes(?*const fn (?*anyopaque) callconv(.c) void),
+    Update: ?*const fn (?*anyopaque) callconv(.C) void = @import("std").mem.zeroes(?*const fn (?*anyopaque) callconv(.C) void),
+    SetPlayerIndex: ?*const fn (?*anyopaque, c_int) callconv(.C) void = @import("std").mem.zeroes(?*const fn (?*anyopaque, c_int) callconv(.C) void),
+    Rumble: ?*const fn (?*anyopaque, Uint16, Uint16) callconv(.C) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, Uint16, Uint16) callconv(.C) bool),
+    RumbleTriggers: ?*const fn (?*anyopaque, Uint16, Uint16) callconv(.C) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, Uint16, Uint16) callconv(.C) bool),
+    SetLED: ?*const fn (?*anyopaque, Uint8, Uint8, Uint8) callconv(.C) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, Uint8, Uint8, Uint8) callconv(.C) bool),
+    SendEffect: ?*const fn (?*anyopaque, ?*const anyopaque, c_int) callconv(.C) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, ?*const anyopaque, c_int) callconv(.C) bool),
+    SetSensorsEnabled: ?*const fn (?*anyopaque, bool) callconv(.C) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, bool) callconv(.C) bool),
+    Cleanup: ?*const fn (?*anyopaque) callconv(.C) void = @import("std").mem.zeroes(?*const fn (?*anyopaque) callconv(.C) void),
 };
 pub const SDL_VirtualJoystickDesc = struct_SDL_VirtualJoystickDesc;
 // /usr/include/SDL3/SDL_stdinc.h:203:42: warning: ignoring StaticAssert declaration
@@ -2688,8 +2680,6 @@ pub const struct_SDL_MouseWheelEvent = extern struct {
     direction: SDL_MouseWheelDirection = @import("std").mem.zeroes(SDL_MouseWheelDirection),
     mouse_x: f32 = @import("std").mem.zeroes(f32),
     mouse_y: f32 = @import("std").mem.zeroes(f32),
-    integer_x: Sint32 = @import("std").mem.zeroes(Sint32),
-    integer_y: Sint32 = @import("std").mem.zeroes(Sint32),
 };
 pub const SDL_MouseWheelEvent = struct_SDL_MouseWheelEvent;
 pub const struct_SDL_JoyAxisEvent = extern struct {
@@ -3009,7 +2999,7 @@ pub extern fn SDL_PollEvent(event: [*c]SDL_Event) bool;
 pub extern fn SDL_WaitEvent(event: [*c]SDL_Event) bool;
 pub extern fn SDL_WaitEventTimeout(event: [*c]SDL_Event, timeoutMS: Sint32) bool;
 pub extern fn SDL_PushEvent(event: [*c]SDL_Event) bool;
-pub const SDL_EventFilter = ?*const fn (?*anyopaque, [*c]SDL_Event) callconv(.c) bool;
+pub const SDL_EventFilter = ?*const fn (?*anyopaque, [*c]SDL_Event) callconv(.C) bool;
 pub extern fn SDL_SetEventFilter(filter: SDL_EventFilter, userdata: ?*anyopaque) void;
 pub extern fn SDL_GetEventFilter(filter: [*c]SDL_EventFilter, userdata: [*c]?*anyopaque) bool;
 pub extern fn SDL_AddEventWatch(filter: SDL_EventFilter, userdata: ?*anyopaque) bool;
@@ -3057,7 +3047,7 @@ pub const SDL_ENUM_SUCCESS: c_int = 1;
 pub const SDL_ENUM_FAILURE: c_int = 2;
 pub const enum_SDL_EnumerationResult = c_uint;
 pub const SDL_EnumerationResult = enum_SDL_EnumerationResult;
-pub const SDL_EnumerateDirectoryCallback = ?*const fn (?*anyopaque, [*c]const u8, [*c]const u8) callconv(.c) SDL_EnumerationResult;
+pub const SDL_EnumerateDirectoryCallback = ?*const fn (?*anyopaque, [*c]const u8, [*c]const u8) callconv(.C) SDL_EnumerationResult;
 pub extern fn SDL_EnumerateDirectory(path: [*c]const u8, callback: SDL_EnumerateDirectoryCallback, userdata: ?*anyopaque) bool;
 pub extern fn SDL_RemovePath(path: [*c]const u8) bool;
 pub extern fn SDL_RenamePath(oldpath: [*c]const u8, newpath: [*c]const u8) bool;
@@ -3991,7 +3981,7 @@ pub extern fn SDL_ResetHint(name: [*c]const u8) bool;
 pub extern fn SDL_ResetHints() void;
 pub extern fn SDL_GetHint(name: [*c]const u8) [*c]const u8;
 pub extern fn SDL_GetHintBoolean(name: [*c]const u8, default_value: bool) bool;
-pub const SDL_HintCallback = ?*const fn (?*anyopaque, [*c]const u8, [*c]const u8, [*c]const u8) callconv(.c) void;
+pub const SDL_HintCallback = ?*const fn (?*anyopaque, [*c]const u8, [*c]const u8, [*c]const u8) callconv(.C) void;
 pub extern fn SDL_AddHintCallback(name: [*c]const u8, callback: SDL_HintCallback, userdata: ?*anyopaque) bool;
 pub extern fn SDL_RemoveHintCallback(name: [*c]const u8, callback: SDL_HintCallback, userdata: ?*anyopaque) void;
 pub const SDL_InitFlags = Uint32;
@@ -4000,17 +3990,17 @@ pub const SDL_APP_SUCCESS: c_int = 1;
 pub const SDL_APP_FAILURE: c_int = 2;
 pub const enum_SDL_AppResult = c_uint;
 pub const SDL_AppResult = enum_SDL_AppResult;
-pub const SDL_AppInit_func = ?*const fn ([*c]?*anyopaque, c_int, [*c][*c]u8) callconv(.c) SDL_AppResult;
-pub const SDL_AppIterate_func = ?*const fn (?*anyopaque) callconv(.c) SDL_AppResult;
-pub const SDL_AppEvent_func = ?*const fn (?*anyopaque, [*c]SDL_Event) callconv(.c) SDL_AppResult;
-pub const SDL_AppQuit_func = ?*const fn (?*anyopaque, SDL_AppResult) callconv(.c) void;
+pub const SDL_AppInit_func = ?*const fn ([*c]?*anyopaque, c_int, [*c][*c]u8) callconv(.C) SDL_AppResult;
+pub const SDL_AppIterate_func = ?*const fn (?*anyopaque) callconv(.C) SDL_AppResult;
+pub const SDL_AppEvent_func = ?*const fn (?*anyopaque, [*c]SDL_Event) callconv(.C) SDL_AppResult;
+pub const SDL_AppQuit_func = ?*const fn (?*anyopaque, SDL_AppResult) callconv(.C) void;
 pub extern fn SDL_Init(flags: SDL_InitFlags) bool;
 pub extern fn SDL_InitSubSystem(flags: SDL_InitFlags) bool;
 pub extern fn SDL_QuitSubSystem(flags: SDL_InitFlags) void;
 pub extern fn SDL_WasInit(flags: SDL_InitFlags) SDL_InitFlags;
 pub extern fn SDL_Quit() void;
 pub extern fn SDL_IsMainThread() bool;
-pub const SDL_MainThreadCallback = ?*const fn (?*anyopaque) callconv(.c) void;
+pub const SDL_MainThreadCallback = ?*const fn (?*anyopaque) callconv(.C) void;
 pub extern fn SDL_RunOnMainThread(callback: SDL_MainThreadCallback, userdata: ?*anyopaque, wait_complete: bool) bool;
 pub extern fn SDL_SetAppMetadata(appname: [*c]const u8, appversion: [*c]const u8, appidentifier: [*c]const u8) bool;
 pub extern fn SDL_SetAppMetadataProperty(name: [*c]const u8, value: [*c]const u8) bool;
@@ -4074,7 +4064,7 @@ pub extern fn SDL_LogError(category: c_int, fmt: [*c]const u8, ...) void;
 pub extern fn SDL_LogCritical(category: c_int, fmt: [*c]const u8, ...) void;
 pub extern fn SDL_LogMessage(category: c_int, priority: SDL_LogPriority, fmt: [*c]const u8, ...) void;
 pub extern fn SDL_LogMessageV(category: c_int, priority: SDL_LogPriority, fmt: [*c]const u8, ap: [*c]struct___va_list_tag_1) void;
-pub const SDL_LogOutputFunction = ?*const fn (?*anyopaque, c_int, SDL_LogPriority, [*c]const u8) callconv(.c) void;
+pub const SDL_LogOutputFunction = ?*const fn (?*anyopaque, c_int, SDL_LogPriority, [*c]const u8) callconv(.C) void;
 pub extern fn SDL_GetDefaultLogOutputFunction() SDL_LogOutputFunction;
 pub extern fn SDL_GetLogOutputFunction(callback: [*c]SDL_LogOutputFunction, userdata: [*c]?*anyopaque) void;
 pub extern fn SDL_SetLogOutputFunction(callback: SDL_LogOutputFunction, userdata: ?*anyopaque) void;
@@ -4257,17 +4247,17 @@ pub extern fn SDL_RenderDebugText(renderer: ?*SDL_Renderer, x: f32, y: f32, str:
 pub extern fn SDL_RenderDebugTextFormat(renderer: ?*SDL_Renderer, x: f32, y: f32, fmt: [*c]const u8, ...) bool;
 pub const struct_SDL_StorageInterface = extern struct {
     version: Uint32 = @import("std").mem.zeroes(Uint32),
-    close: ?*const fn (?*anyopaque) callconv(.c) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque) callconv(.c) bool),
-    ready: ?*const fn (?*anyopaque) callconv(.c) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque) callconv(.c) bool),
-    enumerate: ?*const fn (?*anyopaque, [*c]const u8, SDL_EnumerateDirectoryCallback, ?*anyopaque) callconv(.c) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, [*c]const u8, SDL_EnumerateDirectoryCallback, ?*anyopaque) callconv(.c) bool),
-    info: ?*const fn (?*anyopaque, [*c]const u8, [*c]SDL_PathInfo) callconv(.c) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, [*c]const u8, [*c]SDL_PathInfo) callconv(.c) bool),
-    read_file: ?*const fn (?*anyopaque, [*c]const u8, ?*anyopaque, Uint64) callconv(.c) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, [*c]const u8, ?*anyopaque, Uint64) callconv(.c) bool),
-    write_file: ?*const fn (?*anyopaque, [*c]const u8, ?*const anyopaque, Uint64) callconv(.c) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, [*c]const u8, ?*const anyopaque, Uint64) callconv(.c) bool),
-    mkdir: ?*const fn (?*anyopaque, [*c]const u8) callconv(.c) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, [*c]const u8) callconv(.c) bool),
-    remove: ?*const fn (?*anyopaque, [*c]const u8) callconv(.c) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, [*c]const u8) callconv(.c) bool),
-    rename: ?*const fn (?*anyopaque, [*c]const u8, [*c]const u8) callconv(.c) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, [*c]const u8, [*c]const u8) callconv(.c) bool),
-    copy: ?*const fn (?*anyopaque, [*c]const u8, [*c]const u8) callconv(.c) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, [*c]const u8, [*c]const u8) callconv(.c) bool),
-    space_remaining: ?*const fn (?*anyopaque) callconv(.c) Uint64 = @import("std").mem.zeroes(?*const fn (?*anyopaque) callconv(.c) Uint64),
+    close: ?*const fn (?*anyopaque) callconv(.C) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque) callconv(.C) bool),
+    ready: ?*const fn (?*anyopaque) callconv(.C) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque) callconv(.C) bool),
+    enumerate: ?*const fn (?*anyopaque, [*c]const u8, SDL_EnumerateDirectoryCallback, ?*anyopaque) callconv(.C) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, [*c]const u8, SDL_EnumerateDirectoryCallback, ?*anyopaque) callconv(.C) bool),
+    info: ?*const fn (?*anyopaque, [*c]const u8, [*c]SDL_PathInfo) callconv(.C) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, [*c]const u8, [*c]SDL_PathInfo) callconv(.C) bool),
+    read_file: ?*const fn (?*anyopaque, [*c]const u8, ?*anyopaque, Uint64) callconv(.C) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, [*c]const u8, ?*anyopaque, Uint64) callconv(.C) bool),
+    write_file: ?*const fn (?*anyopaque, [*c]const u8, ?*const anyopaque, Uint64) callconv(.C) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, [*c]const u8, ?*const anyopaque, Uint64) callconv(.C) bool),
+    mkdir: ?*const fn (?*anyopaque, [*c]const u8) callconv(.C) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, [*c]const u8) callconv(.C) bool),
+    remove: ?*const fn (?*anyopaque, [*c]const u8) callconv(.C) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, [*c]const u8) callconv(.C) bool),
+    rename: ?*const fn (?*anyopaque, [*c]const u8, [*c]const u8) callconv(.C) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, [*c]const u8, [*c]const u8) callconv(.C) bool),
+    copy: ?*const fn (?*anyopaque, [*c]const u8, [*c]const u8) callconv(.C) bool = @import("std").mem.zeroes(?*const fn (?*anyopaque, [*c]const u8, [*c]const u8) callconv(.C) bool),
+    space_remaining: ?*const fn (?*anyopaque) callconv(.C) Uint64 = @import("std").mem.zeroes(?*const fn (?*anyopaque) callconv(.C) Uint64),
 };
 pub const SDL_StorageInterface = struct_SDL_StorageInterface;
 // /usr/include/SDL3/SDL_stdinc.h:203:42: warning: ignoring StaticAssert declaration
@@ -4292,7 +4282,7 @@ pub extern fn SDL_GetStorageSpaceRemaining(storage: ?*SDL_Storage) Uint64;
 pub extern fn SDL_GlobStorageDirectory(storage: ?*SDL_Storage, path: [*c]const u8, pattern: [*c]const u8, flags: SDL_GlobFlags, count: [*c]c_int) [*c][*c]u8;
 pub const union__XEvent = opaque {};
 pub const XEvent = union__XEvent;
-pub const SDL_X11EventHook = ?*const fn (?*anyopaque, ?*XEvent) callconv(.c) bool;
+pub const SDL_X11EventHook = ?*const fn (?*anyopaque, ?*XEvent) callconv(.C) bool;
 pub extern fn SDL_SetX11EventHook(callback: SDL_X11EventHook, userdata: ?*anyopaque) void;
 pub extern fn SDL_SetLinuxThreadPriority(threadID: Sint64, priority: c_int) bool;
 pub extern fn SDL_SetLinuxThreadPriorityAndPolicy(threadID: Sint64, sdlPriority: c_int, schedPolicy: c_int) bool;
@@ -4350,9 +4340,9 @@ pub extern fn SDL_Delay(ms: Uint32) void;
 pub extern fn SDL_DelayNS(ns: Uint64) void;
 pub extern fn SDL_DelayPrecise(ns: Uint64) void;
 pub const SDL_TimerID = Uint32;
-pub const SDL_TimerCallback = ?*const fn (?*anyopaque, SDL_TimerID, Uint32) callconv(.c) Uint32;
+pub const SDL_TimerCallback = ?*const fn (?*anyopaque, SDL_TimerID, Uint32) callconv(.C) Uint32;
 pub extern fn SDL_AddTimer(interval: Uint32, callback: SDL_TimerCallback, userdata: ?*anyopaque) SDL_TimerID;
-pub const SDL_NSTimerCallback = ?*const fn (?*anyopaque, SDL_TimerID, Uint64) callconv(.c) Uint64;
+pub const SDL_NSTimerCallback = ?*const fn (?*anyopaque, SDL_TimerID, Uint64) callconv(.C) Uint64;
 pub extern fn SDL_AddTimerNS(interval: Uint64, callback: SDL_NSTimerCallback, userdata: ?*anyopaque) SDL_TimerID;
 pub extern fn SDL_RemoveTimer(id: SDL_TimerID) bool;
 pub const struct_SDL_Tray = opaque {};
@@ -4362,7 +4352,7 @@ pub const SDL_TrayMenu = struct_SDL_TrayMenu;
 pub const struct_SDL_TrayEntry = opaque {};
 pub const SDL_TrayEntry = struct_SDL_TrayEntry;
 pub const SDL_TrayEntryFlags = Uint32;
-pub const SDL_TrayCallback = ?*const fn (?*anyopaque, ?*SDL_TrayEntry) callconv(.c) void;
+pub const SDL_TrayCallback = ?*const fn (?*anyopaque, ?*SDL_TrayEntry) callconv(.C) void;
 pub extern fn SDL_CreateTray(icon: [*c]SDL_Surface, tooltip: [*c]const u8) ?*SDL_Tray;
 pub extern fn SDL_SetTrayIcon(tray: ?*SDL_Tray, icon: [*c]SDL_Surface) void;
 pub extern fn SDL_SetTrayTooltip(tray: ?*SDL_Tray, tooltip: [*c]const u8) void;
@@ -4370,7 +4360,7 @@ pub extern fn SDL_CreateTrayMenu(tray: ?*SDL_Tray) ?*SDL_TrayMenu;
 pub extern fn SDL_CreateTraySubmenu(entry: ?*SDL_TrayEntry) ?*SDL_TrayMenu;
 pub extern fn SDL_GetTrayMenu(tray: ?*SDL_Tray) ?*SDL_TrayMenu;
 pub extern fn SDL_GetTraySubmenu(entry: ?*SDL_TrayEntry) ?*SDL_TrayMenu;
-pub extern fn SDL_GetTrayEntries(menu: ?*SDL_TrayMenu, count: [*c]c_int) [*c]?*const SDL_TrayEntry;
+pub extern fn SDL_GetTrayEntries(menu: ?*SDL_TrayMenu, size: [*c]c_int) [*c]?*const SDL_TrayEntry;
 pub extern fn SDL_RemoveTrayEntry(entry: ?*SDL_TrayEntry) void;
 pub extern fn SDL_InsertTrayEntryAt(menu: ?*SDL_TrayMenu, pos: c_int, label: [*c]const u8, flags: SDL_TrayEntryFlags) ?*SDL_TrayEntry;
 pub extern fn SDL_SetTrayEntryLabel(entry: ?*SDL_TrayEntry, label: [*c]const u8) void;
@@ -4404,10 +4394,10 @@ pub extern fn SDL_Vulkan_DestroySurface(instance: VkInstance, surface: VkSurface
 pub extern fn SDL_Vulkan_GetPresentationSupport(instance: VkInstance, physicalDevice: VkPhysicalDevice, queueFamilyIndex: Uint32) bool;
 pub const __llvm__ = @as(c_int, 1);
 pub const __clang__ = @as(c_int, 1);
-pub const __clang_major__ = @as(c_int, 20);
+pub const __clang_major__ = @as(c_int, 18);
 pub const __clang_minor__ = @as(c_int, 1);
 pub const __clang_patchlevel__ = @as(c_int, 8);
-pub const __clang_version__ = "20.1.8 ";
+pub const __clang_version__ = "18.1.8 ";
 pub const __GNUC__ = @as(c_int, 4);
 pub const __GNUC_MINOR__ = @as(c_int, 2);
 pub const __GNUC_PATCHLEVEL__ = @as(c_int, 1);
@@ -4439,7 +4429,7 @@ pub const __FPCLASS_POSSUBNORMAL = @as(c_int, 0x0080);
 pub const __FPCLASS_POSNORMAL = @as(c_int, 0x0100);
 pub const __FPCLASS_POSINF = @as(c_int, 0x0200);
 pub const __PRAGMA_REDEFINE_EXTNAME = @as(c_int, 1);
-pub const __VERSION__ = "Clang 20.1.8";
+pub const __VERSION__ = "Clang 18.1.8";
 pub const __OBJC_BOOL_IS_BOOL = @as(c_int, 0);
 pub const __CONSTANT_CFSTRINGS__ = @as(c_int, 1);
 pub const __clang_literal_encoding__ = "UTF-8";
@@ -4452,7 +4442,7 @@ pub const __LITTLE_ENDIAN__ = @as(c_int, 1);
 pub const _LP64 = @as(c_int, 1);
 pub const __LP64__ = @as(c_int, 1);
 pub const __CHAR_BIT__ = @as(c_int, 8);
-pub const __BOOL_WIDTH__ = @as(c_int, 1);
+pub const __BOOL_WIDTH__ = @as(c_int, 8);
 pub const __SHRT_WIDTH__ = @as(c_int, 16);
 pub const __INT_WIDTH__ = @as(c_int, 32);
 pub const __LONG_WIDTH__ = @as(c_int, 64);
@@ -4497,15 +4487,13 @@ pub const __INTMAX_FMTd__ = "ld";
 pub const __INTMAX_FMTi__ = "li";
 pub const __INTMAX_C_SUFFIX__ = @compileError("unable to translate macro: undefined identifier `L`");
 // (no file):95:9
-pub const __INTMAX_C = @import("std").zig.c_translation.Macros.L_SUFFIX;
 pub const __UINTMAX_TYPE__ = c_ulong;
 pub const __UINTMAX_FMTo__ = "lo";
 pub const __UINTMAX_FMTu__ = "lu";
 pub const __UINTMAX_FMTx__ = "lx";
 pub const __UINTMAX_FMTX__ = "lX";
 pub const __UINTMAX_C_SUFFIX__ = @compileError("unable to translate macro: undefined identifier `UL`");
-// (no file):102:9
-pub const __UINTMAX_C = @import("std").zig.c_translation.Macros.UL_SUFFIX;
+// (no file):101:9
 pub const __PTRDIFF_TYPE__ = c_long;
 pub const __PTRDIFF_FMTd__ = "ld";
 pub const __PTRDIFF_FMTi__ = "li";
@@ -4529,7 +4517,6 @@ pub const __UINTPTR_FMTu__ = "lu";
 pub const __UINTPTR_FMTx__ = "lx";
 pub const __UINTPTR_FMTX__ = "lX";
 pub const __FLT16_DENORM_MIN__ = @as(f16, 5.9604644775390625e-8);
-pub const __FLT16_NORM_MAX__ = @as(f16, 6.5504e+4);
 pub const __FLT16_HAS_DENORM__ = @as(c_int, 1);
 pub const __FLT16_DIG__ = @as(c_int, 3);
 pub const __FLT16_DECIMAL_DIG__ = @as(c_int, 5);
@@ -4544,7 +4531,6 @@ pub const __FLT16_MIN_10_EXP__ = -@as(c_int, 4);
 pub const __FLT16_MIN_EXP__ = -@as(c_int, 13);
 pub const __FLT16_MIN__ = @as(f16, 6.103515625e-5);
 pub const __FLT_DENORM_MIN__ = @as(f32, 1.40129846e-45);
-pub const __FLT_NORM_MAX__ = @as(f32, 3.40282347e+38);
 pub const __FLT_HAS_DENORM__ = @as(c_int, 1);
 pub const __FLT_DIG__ = @as(c_int, 6);
 pub const __FLT_DECIMAL_DIG__ = @as(c_int, 9);
@@ -4559,7 +4545,6 @@ pub const __FLT_MIN_10_EXP__ = -@as(c_int, 37);
 pub const __FLT_MIN_EXP__ = -@as(c_int, 125);
 pub const __FLT_MIN__ = @as(f32, 1.17549435e-38);
 pub const __DBL_DENORM_MIN__ = @as(f64, 4.9406564584124654e-324);
-pub const __DBL_NORM_MAX__ = @as(f64, 1.7976931348623157e+308);
 pub const __DBL_HAS_DENORM__ = @as(c_int, 1);
 pub const __DBL_DIG__ = @as(c_int, 15);
 pub const __DBL_DECIMAL_DIG__ = @as(c_int, 17);
@@ -4574,7 +4559,6 @@ pub const __DBL_MIN_10_EXP__ = -@as(c_int, 307);
 pub const __DBL_MIN_EXP__ = -@as(c_int, 1021);
 pub const __DBL_MIN__ = @as(f64, 2.2250738585072014e-308);
 pub const __LDBL_DENORM_MIN__ = @as(c_longdouble, 3.64519953188247460253e-4951);
-pub const __LDBL_NORM_MAX__ = @as(c_longdouble, 1.18973149535723176502e+4932);
 pub const __LDBL_HAS_DENORM__ = @as(c_int, 1);
 pub const __LDBL_DIG__ = @as(c_int, 18);
 pub const __LDBL_DECIMAL_DIG__ = @as(c_int, 21);
@@ -4595,42 +4579,25 @@ pub const __INT8_TYPE__ = i8;
 pub const __INT8_FMTd__ = "hhd";
 pub const __INT8_FMTi__ = "hhi";
 pub const __INT8_C_SUFFIX__ = "";
-pub inline fn __INT8_C(c: anytype) @TypeOf(c) {
-    _ = &c;
-    return c;
-}
 pub const __INT16_TYPE__ = c_short;
 pub const __INT16_FMTd__ = "hd";
 pub const __INT16_FMTi__ = "hi";
 pub const __INT16_C_SUFFIX__ = "";
-pub inline fn __INT16_C(c: anytype) @TypeOf(c) {
-    _ = &c;
-    return c;
-}
 pub const __INT32_TYPE__ = c_int;
 pub const __INT32_FMTd__ = "d";
 pub const __INT32_FMTi__ = "i";
 pub const __INT32_C_SUFFIX__ = "";
-pub inline fn __INT32_C(c: anytype) @TypeOf(c) {
-    _ = &c;
-    return c;
-}
 pub const __INT64_TYPE__ = c_long;
 pub const __INT64_FMTd__ = "ld";
 pub const __INT64_FMTi__ = "li";
 pub const __INT64_C_SUFFIX__ = @compileError("unable to translate macro: undefined identifier `L`");
-// (no file):207:9
-pub const __INT64_C = @import("std").zig.c_translation.Macros.L_SUFFIX;
+// (no file):198:9
 pub const __UINT8_TYPE__ = u8;
 pub const __UINT8_FMTo__ = "hho";
 pub const __UINT8_FMTu__ = "hhu";
 pub const __UINT8_FMTx__ = "hhx";
 pub const __UINT8_FMTX__ = "hhX";
 pub const __UINT8_C_SUFFIX__ = "";
-pub inline fn __UINT8_C(c: anytype) @TypeOf(c) {
-    _ = &c;
-    return c;
-}
 pub const __UINT8_MAX__ = @as(c_int, 255);
 pub const __INT8_MAX__ = @as(c_int, 127);
 pub const __UINT16_TYPE__ = c_ushort;
@@ -4639,10 +4606,6 @@ pub const __UINT16_FMTu__ = "hu";
 pub const __UINT16_FMTx__ = "hx";
 pub const __UINT16_FMTX__ = "hX";
 pub const __UINT16_C_SUFFIX__ = "";
-pub inline fn __UINT16_C(c: anytype) @TypeOf(c) {
-    _ = &c;
-    return c;
-}
 pub const __UINT16_MAX__ = @import("std").zig.c_translation.promoteIntLiteral(c_int, 65535, .decimal);
 pub const __INT16_MAX__ = @as(c_int, 32767);
 pub const __UINT32_TYPE__ = c_uint;
@@ -4651,8 +4614,7 @@ pub const __UINT32_FMTu__ = "u";
 pub const __UINT32_FMTx__ = "x";
 pub const __UINT32_FMTX__ = "X";
 pub const __UINT32_C_SUFFIX__ = @compileError("unable to translate macro: undefined identifier `U`");
-// (no file):232:9
-pub const __UINT32_C = @import("std").zig.c_translation.Macros.U_SUFFIX;
+// (no file):220:9
 pub const __UINT32_MAX__ = @import("std").zig.c_translation.promoteIntLiteral(c_uint, 4294967295, .decimal);
 pub const __INT32_MAX__ = @import("std").zig.c_translation.promoteIntLiteral(c_int, 2147483647, .decimal);
 pub const __UINT64_TYPE__ = c_ulong;
@@ -4661,8 +4623,7 @@ pub const __UINT64_FMTu__ = "lu";
 pub const __UINT64_FMTx__ = "lx";
 pub const __UINT64_FMTX__ = "lX";
 pub const __UINT64_C_SUFFIX__ = @compileError("unable to translate macro: undefined identifier `UL`");
-// (no file):241:9
-pub const __UINT64_C = @import("std").zig.c_translation.Macros.UL_SUFFIX;
+// (no file):228:9
 pub const __UINT64_MAX__ = @import("std").zig.c_translation.promoteIntLiteral(c_ulong, 18446744073709551615, .decimal);
 pub const __INT64_MAX__ = @import("std").zig.c_translation.promoteIntLiteral(c_long, 9223372036854775807, .decimal);
 pub const __INT_LEAST8_TYPE__ = i8;
@@ -4782,9 +4743,10 @@ pub const __GCC_ATOMIC_POINTER_LOCK_FREE = @as(c_int, 2);
 pub const __NO_INLINE__ = @as(c_int, 1);
 pub const __PIC__ = @as(c_int, 2);
 pub const __pic__ = @as(c_int, 2);
+pub const __PIE__ = @as(c_int, 2);
+pub const __pie__ = @as(c_int, 2);
 pub const __FLT_RADIX__ = @as(c_int, 2);
 pub const __DECIMAL_DIG__ = __LDBL_DECIMAL_DIG__;
-pub const __SSP_STRONG__ = @as(c_int, 2);
 pub const __ELF__ = @as(c_int, 1);
 pub const __GCC_ASM_FLAG_OUTPUTS__ = @as(c_int, 1);
 pub const __code_model_small__ = @as(c_int, 1);
@@ -4795,15 +4757,55 @@ pub const __x86_64__ = @as(c_int, 1);
 pub const __SEG_GS = @as(c_int, 1);
 pub const __SEG_FS = @as(c_int, 1);
 pub const __seg_gs = @compileError("unable to translate macro: undefined identifier `address_space`");
-// (no file):376:9
+// (no file):363:9
 pub const __seg_fs = @compileError("unable to translate macro: undefined identifier `address_space`");
-// (no file):377:9
-pub const __k8 = @as(c_int, 1);
-pub const __k8__ = @as(c_int, 1);
-pub const __tune_k8__ = @as(c_int, 1);
+// (no file):364:9
+pub const __znver3 = @as(c_int, 1);
+pub const __znver3__ = @as(c_int, 1);
+pub const __tune_znver3__ = @as(c_int, 1);
 pub const __REGISTER_PREFIX__ = "";
 pub const __NO_MATH_INLINES = @as(c_int, 1);
+pub const __AES__ = @as(c_int, 1);
+pub const __VAES__ = @as(c_int, 1);
+pub const __PCLMUL__ = @as(c_int, 1);
+pub const __VPCLMULQDQ__ = @as(c_int, 1);
+pub const __LAHF_SAHF__ = @as(c_int, 1);
+pub const __LZCNT__ = @as(c_int, 1);
+pub const __RDRND__ = @as(c_int, 1);
+pub const __FSGSBASE__ = @as(c_int, 1);
+pub const __BMI__ = @as(c_int, 1);
+pub const __BMI2__ = @as(c_int, 1);
+pub const __POPCNT__ = @as(c_int, 1);
+pub const __PRFCHW__ = @as(c_int, 1);
+pub const __RDSEED__ = @as(c_int, 1);
+pub const __ADX__ = @as(c_int, 1);
+pub const __MWAITX__ = @as(c_int, 1);
+pub const __MOVBE__ = @as(c_int, 1);
+pub const __SSE4A__ = @as(c_int, 1);
+pub const __FMA__ = @as(c_int, 1);
+pub const __F16C__ = @as(c_int, 1);
+pub const __SHA__ = @as(c_int, 1);
 pub const __FXSR__ = @as(c_int, 1);
+pub const __XSAVE__ = @as(c_int, 1);
+pub const __XSAVEOPT__ = @as(c_int, 1);
+pub const __XSAVEC__ = @as(c_int, 1);
+pub const __XSAVES__ = @as(c_int, 1);
+pub const __PKU__ = @as(c_int, 1);
+pub const __CLFLUSHOPT__ = @as(c_int, 1);
+pub const __CLWB__ = @as(c_int, 1);
+pub const __WBNOINVD__ = @as(c_int, 1);
+pub const __SHSTK__ = @as(c_int, 1);
+pub const __CLZERO__ = @as(c_int, 1);
+pub const __RDPID__ = @as(c_int, 1);
+pub const __RDPRU__ = @as(c_int, 1);
+pub const __INVPCID__ = @as(c_int, 1);
+pub const __CRC32__ = @as(c_int, 1);
+pub const __AVX2__ = @as(c_int, 1);
+pub const __AVX__ = @as(c_int, 1);
+pub const __SSE4_2__ = @as(c_int, 1);
+pub const __SSE4_1__ = @as(c_int, 1);
+pub const __SSSE3__ = @as(c_int, 1);
+pub const __SSE3__ = @as(c_int, 1);
 pub const __SSE2__ = @as(c_int, 1);
 pub const __SSE2_MATH__ = @as(c_int, 1);
 pub const __SSE__ = @as(c_int, 1);
@@ -4813,6 +4815,7 @@ pub const __GCC_HAVE_SYNC_COMPARE_AND_SWAP_1 = @as(c_int, 1);
 pub const __GCC_HAVE_SYNC_COMPARE_AND_SWAP_2 = @as(c_int, 1);
 pub const __GCC_HAVE_SYNC_COMPARE_AND_SWAP_4 = @as(c_int, 1);
 pub const __GCC_HAVE_SYNC_COMPARE_AND_SWAP_8 = @as(c_int, 1);
+pub const __GCC_HAVE_SYNC_COMPARE_AND_SWAP_16 = @as(c_int, 1);
 pub const __SIZEOF_FLOAT128__ = @as(c_int, 16);
 pub const unix = @as(c_int, 1);
 pub const __unix = @as(c_int, 1);
@@ -4827,22 +4830,19 @@ pub const __STDC_HOSTED__ = @as(c_int, 1);
 pub const __STDC_VERSION__ = @as(c_long, 201710);
 pub const __STDC_UTF_16__ = @as(c_int, 1);
 pub const __STDC_UTF_32__ = @as(c_int, 1);
-pub const __STDC_EMBED_NOT_FOUND__ = @as(c_int, 0);
-pub const __STDC_EMBED_FOUND__ = @as(c_int, 1);
-pub const __STDC_EMBED_EMPTY__ = @as(c_int, 2);
-pub const __GLIBC_MINOR__ = @as(c_int, 31);
+pub const _DEBUG = @as(c_int, 1);
 pub const __GCC_HAVE_DWARF2_CFI_ASM = @as(c_int, 1);
 pub const SDL_h_ = "";
 pub const SDL_stdinc_h_ = "";
 pub const SDL_platform_defines_h_ = "";
 pub const SDL_PLATFORM_LINUX = @as(c_int, 1);
 pub const SDL_PLATFORM_UNIX = @as(c_int, 1);
+pub const __STDARG_H = "";
 pub const __need___va_list = "";
 pub const __need_va_list = "";
 pub const __need_va_arg = "";
 pub const __need___va_copy = "";
 pub const __need_va_copy = "";
-pub const __STDARG_H = "";
 pub const __GNUC_VA_LIST = "";
 pub const _VA_LIST = "";
 pub const va_start = @compileError("unable to translate macro: undefined identifier `__builtin_va_start`");
@@ -4870,9 +4870,8 @@ pub inline fn __glibc_clang_prereq(maj: anytype, min: anytype) @TypeOf(((__clang
     return ((__clang_major__ << @as(c_int, 16)) + __clang_minor__) >= ((maj << @as(c_int, 16)) + min);
 }
 pub const __GLIBC_USE = @compileError("unable to translate macro: undefined identifier `__GLIBC_USE_`");
-// /usr/include/features.h:191:9
+// /usr/include/features.h:189:9
 pub const _DEFAULT_SOURCE = @as(c_int, 1);
-pub const __GLIBC_USE_ISOC2Y = @as(c_int, 0);
 pub const __GLIBC_USE_ISOC23 = @as(c_int, 0);
 pub const __USE_ISOC11 = @as(c_int, 1);
 pub const __USE_ISOC99 = @as(c_int, 1);
@@ -4906,6 +4905,7 @@ pub const __STDC_IEC_60559_COMPLEX__ = @as(c_long, 201404);
 pub const __STDC_ISO_10646__ = @as(c_long, 201706);
 pub const __GNU_LIBRARY__ = @as(c_int, 6);
 pub const __GLIBC__ = @as(c_int, 2);
+pub const __GLIBC_MINOR__ = @as(c_int, 40);
 pub inline fn __GLIBC_PREREQ(maj: anytype, min: anytype) @TypeOf(((__GLIBC__ << @as(c_int, 16)) + __GLIBC_MINOR__) >= ((maj << @as(c_int, 16)) + min)) {
     _ = &maj;
     _ = &min;
@@ -5185,6 +5185,8 @@ pub const _BITS_STDINT_INTN_H = @as(c_int, 1);
 pub const _BITS_STDINT_UINTN_H = @as(c_int, 1);
 pub const _BITS_STDINT_LEAST_H = @as(c_int, 1);
 pub const __intptr_t_defined = "";
+pub const __INT64_C = @import("std").zig.c_translation.Macros.L_SUFFIX;
+pub const __UINT64_C = @import("std").zig.c_translation.Macros.UL_SUFFIX;
 pub const INT8_MIN = -@as(c_int, 128);
 pub const INT16_MIN = -@as(c_int, 32767) - @as(c_int, 1);
 pub const INT32_MIN = -@import("std").zig.c_translation.promoteIntLiteral(c_int, 2147483647, .decimal) - @as(c_int, 1);
@@ -5271,15 +5273,10 @@ pub const _BITS_TYPES___LOCALE_T_H = @as(c_int, 1);
 pub const _STRINGS_H = @as(c_int, 1);
 pub const _WCHAR_H = @as(c_int, 1);
 pub const _BITS_FLOATN_H = "";
-pub const __HAVE_FLOAT128 = @as(c_int, 1);
-pub const __HAVE_DISTINCT_FLOAT128 = @as(c_int, 1);
+pub const __HAVE_FLOAT128 = @as(c_int, 0);
+pub const __HAVE_DISTINCT_FLOAT128 = @as(c_int, 0);
 pub const __HAVE_FLOAT64X = @as(c_int, 1);
 pub const __HAVE_FLOAT64X_LONG_DOUBLE = @as(c_int, 1);
-pub const __f128 = @compileError("unable to translate macro: undefined identifier `q`");
-// /usr/include/bits/floatn.h:70:12
-pub const __CFLOAT128 = __cfloat128;
-pub const __builtin_signbitf128 = @compileError("unable to translate macro: undefined identifier `__signbitf128`");
-// /usr/include/bits/floatn.h:124:12
 pub const _BITS_FLOATN_COMMON_H = "";
 pub const __HAVE_FLOAT16 = @as(c_int, 0);
 pub const __HAVE_FLOAT32 = @as(c_int, 1);
@@ -5663,13 +5660,13 @@ pub inline fn SDL_clamp(x: anytype, a: anytype, b: anytype) @TypeOf(if (x < a) a
     return if (x < a) a else if (x > b) b else x;
 }
 pub const SDL_copyp = @compileError("unable to translate C expr: unexpected token '{'");
-// /usr/include/SDL3/SDL_stdinc.h:2511:9
+// /usr/include/SDL3/SDL_stdinc.h:2499:9
 pub const SDL_zero = @compileError("unable to translate C expr: unexpected token '('");
-// /usr/include/SDL3/SDL_stdinc.h:2607:9
+// /usr/include/SDL3/SDL_stdinc.h:2595:9
 pub const SDL_zerop = @compileError("unable to translate C expr: unexpected token '*'");
-// /usr/include/SDL3/SDL_stdinc.h:2626:9
+// /usr/include/SDL3/SDL_stdinc.h:2614:9
 pub const SDL_zeroa = @compileError("unable to translate C expr: unexpected token '('");
-// /usr/include/SDL3/SDL_stdinc.h:2645:9
+// /usr/include/SDL3/SDL_stdinc.h:2633:9
 pub const SDL_INVALID_UNICODE_CODEPOINT = @import("std").zig.c_translation.promoteIntLiteral(c_int, 0xFFFD, .hex);
 pub const SDL_PI_D = @as(f64, 3.141592653589793238462643383279502884);
 pub const SDL_PI_F = @as(f32, 3.141592653589793238462643383279502884);
@@ -5698,19 +5695,19 @@ pub const SDL_ASSERT_LEVEL = @as(c_int, 2);
 pub const SDL_TriggerBreakpoint = @compileError("unable to translate macro: undefined identifier `__builtin_debugtrap`");
 // /usr/include/SDL3/SDL_assert.h:139:13
 pub const SDL_FUNCTION = @compileError("unable to translate C expr: unexpected token 'an identifier'");
-// /usr/include/SDL3/SDL_assert.h:175:12
+// /usr/include/SDL3/SDL_assert.h:173:12
 pub const SDL_FILE = @compileError("unable to translate macro: undefined identifier `__FILE__`");
-// /usr/include/SDL3/SDL_assert.h:187:9
+// /usr/include/SDL3/SDL_assert.h:185:9
 pub const SDL_LINE = @compileError("unable to translate macro: undefined identifier `__LINE__`");
-// /usr/include/SDL3/SDL_assert.h:194:9
+// /usr/include/SDL3/SDL_assert.h:192:9
 pub const SDL_NULL_WHILE_LOOP_CONDITION = @as(c_int, 0);
 pub const SDL_disabled_assert = @compileError("unable to translate C expr: unexpected token 'do'");
-// /usr/include/SDL3/SDL_assert.h:255:9
+// /usr/include/SDL3/SDL_assert.h:253:9
 pub inline fn SDL_AssertBreakpoint() @TypeOf(SDL_TriggerBreakpoint()) {
     return SDL_TriggerBreakpoint();
 }
 pub const SDL_enabled_assert = @compileError("unable to translate macro: undefined identifier `sdl_assert_data`");
-// /usr/include/SDL3/SDL_assert.h:362:9
+// /usr/include/SDL3/SDL_assert.h:360:9
 pub inline fn SDL_assert(condition: anytype) @TypeOf(SDL_enabled_assert(condition)) {
     _ = &condition;
     return SDL_enabled_assert(condition);
@@ -5965,13 +5962,8 @@ pub const SDL_AUDIO_MASK_BITSIZE = @as(c_uint, 0xFF);
 pub const SDL_AUDIO_MASK_FLOAT = @as(c_uint, 1) << @as(c_int, 8);
 pub const SDL_AUDIO_MASK_BIG_ENDIAN = @as(c_uint, 1) << @as(c_int, 12);
 pub const SDL_AUDIO_MASK_SIGNED = @as(c_uint, 1) << @as(c_int, 15);
-pub inline fn SDL_DEFINE_AUDIO_FORMAT(signed: anytype, bigendian: anytype, flt: anytype, size: anytype) @TypeOf((((@import("std").zig.c_translation.cast(Uint16, signed) << @as(c_int, 15)) | (@import("std").zig.c_translation.cast(Uint16, bigendian) << @as(c_int, 12))) | (@import("std").zig.c_translation.cast(Uint16, flt) << @as(c_int, 8))) | (size & SDL_AUDIO_MASK_BITSIZE)) {
-    _ = &signed;
-    _ = &bigendian;
-    _ = &flt;
-    _ = &size;
-    return (((@import("std").zig.c_translation.cast(Uint16, signed) << @as(c_int, 15)) | (@import("std").zig.c_translation.cast(Uint16, bigendian) << @as(c_int, 12))) | (@import("std").zig.c_translation.cast(Uint16, flt) << @as(c_int, 8))) | (size & SDL_AUDIO_MASK_BITSIZE);
-}
+pub const SDL_DEFINE_AUDIO_FORMAT = @compileError("unable to translate C expr: expected ')' instead got 'signed'");
+// /usr/include/SDL3/SDL_audio.h:204:9
 pub inline fn SDL_AUDIO_BITSIZE(x: anytype) @TypeOf(x & SDL_AUDIO_MASK_BITSIZE) {
     _ = &x;
     return x & SDL_AUDIO_MASK_BITSIZE;
@@ -6159,8 +6151,6 @@ pub inline fn SDL_MUSTLOCK(S: anytype) @TypeOf((S.*.flags & SDL_SURFACE_LOCK_NEE
 pub const SDL_PROP_SURFACE_SDR_WHITE_POINT_FLOAT = "SDL.surface.SDR_white_point";
 pub const SDL_PROP_SURFACE_HDR_HEADROOM_FLOAT = "SDL.surface.HDR_headroom";
 pub const SDL_PROP_SURFACE_TONEMAP_OPERATOR_STRING = "SDL.surface.tonemap";
-pub const SDL_PROP_SURFACE_HOTSPOT_X_NUMBER = "SDL.surface.hotspot.x";
-pub const SDL_PROP_SURFACE_HOTSPOT_Y_NUMBER = "SDL.surface.hotspot.y";
 pub const SDL_clipboard_h_ = "";
 pub const SDL_cpuinfo_h_ = "";
 pub const SDL_CACHELINE_SIZE = @as(c_int, 128);
@@ -6227,7 +6217,6 @@ pub const SDL_PROP_DISPLAY_HDR_ENABLED_BOOLEAN = "SDL.display.HDR_enabled";
 pub const SDL_PROP_DISPLAY_KMSDRM_PANEL_ORIENTATION_NUMBER = "SDL.display.KMSDRM.panel_orientation";
 pub const SDL_PROP_WINDOW_CREATE_ALWAYS_ON_TOP_BOOLEAN = "SDL.window.create.always_on_top";
 pub const SDL_PROP_WINDOW_CREATE_BORDERLESS_BOOLEAN = "SDL.window.create.borderless";
-pub const SDL_PROP_WINDOW_CREATE_CONSTRAIN_POPUP_BOOLEAN = "SDL.window.create.constrain_popup";
 pub const SDL_PROP_WINDOW_CREATE_FOCUSABLE_BOOLEAN = "SDL.window.create.focusable";
 pub const SDL_PROP_WINDOW_CREATE_EXTERNAL_GRAPHICS_CONTEXT_BOOLEAN = "SDL.window.create.external_graphics_context";
 pub const SDL_PROP_WINDOW_CREATE_FLAGS_NUMBER = "SDL.window.create.flags";
@@ -6695,7 +6684,7 @@ pub const SDL_PROP_GPU_TEXTURE_CREATE_D3D12_CLEAR_G_FLOAT = "SDL.gpu.texture.cre
 pub const SDL_PROP_GPU_TEXTURE_CREATE_D3D12_CLEAR_B_FLOAT = "SDL.gpu.texture.create.d3d12.clear.b";
 pub const SDL_PROP_GPU_TEXTURE_CREATE_D3D12_CLEAR_A_FLOAT = "SDL.gpu.texture.create.d3d12.clear.a";
 pub const SDL_PROP_GPU_TEXTURE_CREATE_D3D12_CLEAR_DEPTH_FLOAT = "SDL.gpu.texture.create.d3d12.clear.depth";
-pub const SDL_PROP_GPU_TEXTURE_CREATE_D3D12_CLEAR_STENCIL_NUMBER = "SDL.gpu.texture.create.d3d12.clear.stencil";
+pub const SDL_PROP_GPU_TEXTURE_CREATE_D3D12_CLEAR_STENCIL_UINT8 = "SDL.gpu.texture.create.d3d12.clear.stencil";
 pub const SDL_PROP_GPU_TEXTURE_CREATE_NAME_STRING = "SDL.gpu.texture.create.name";
 pub const SDL_PROP_GPU_BUFFER_CREATE_NAME_STRING = "SDL.gpu.buffer.create.name";
 pub const SDL_PROP_GPU_TRANSFERBUFFER_CREATE_NAME_STRING = "SDL.gpu.transferbuffer.create.name";
@@ -6848,7 +6837,6 @@ pub const SDL_HINT_JOYSTICK_WGI = "SDL_JOYSTICK_WGI";
 pub const SDL_HINT_JOYSTICK_WHEEL_DEVICES = "SDL_JOYSTICK_WHEEL_DEVICES";
 pub const SDL_HINT_JOYSTICK_WHEEL_DEVICES_EXCLUDED = "SDL_JOYSTICK_WHEEL_DEVICES_EXCLUDED";
 pub const SDL_HINT_JOYSTICK_ZERO_CENTERED_DEVICES = "SDL_JOYSTICK_ZERO_CENTERED_DEVICES";
-pub const SDL_HINT_JOYSTICK_HAPTIC_AXES = "SDL_JOYSTICK_HAPTIC_AXES";
 pub const SDL_HINT_KEYCODE_OPTIONS = "SDL_KEYCODE_OPTIONS";
 pub const SDL_HINT_KMSDRM_DEVICE_INDEX = "SDL_KMSDRM_DEVICE_INDEX";
 pub const SDL_HINT_KMSDRM_REQUIRE_DRM_MASTER = "SDL_KMSDRM_REQUIRE_DRM_MASTER";
@@ -6923,7 +6911,6 @@ pub const SDL_HINT_VIDEO_WAYLAND_MODE_SCALING = "SDL_VIDEO_WAYLAND_MODE_SCALING"
 pub const SDL_HINT_VIDEO_WAYLAND_PREFER_LIBDECOR = "SDL_VIDEO_WAYLAND_PREFER_LIBDECOR";
 pub const SDL_HINT_VIDEO_WAYLAND_SCALE_TO_DISPLAY = "SDL_VIDEO_WAYLAND_SCALE_TO_DISPLAY";
 pub const SDL_HINT_VIDEO_WIN_D3DCOMPILER = "SDL_VIDEO_WIN_D3DCOMPILER";
-pub const SDL_HINT_VIDEO_X11_EXTERNAL_WINDOW_INPUT = "SDL_VIDEO_X11_EXTERNAL_WINDOW_INPUT";
 pub const SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR = "SDL_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR";
 pub const SDL_HINT_VIDEO_X11_NET_WM_PING = "SDL_VIDEO_X11_NET_WM_PING";
 pub const SDL_HINT_VIDEO_X11_NODIRECTCOLOR = "SDL_VIDEO_X11_NODIRECTCOLOR";
@@ -7142,7 +7129,7 @@ pub const SDL_TRAYENTRY_CHECKED = @import("std").zig.c_translation.promoteIntLit
 pub const SDL_version_h_ = "";
 pub const SDL_MAJOR_VERSION = @as(c_int, 3);
 pub const SDL_MINOR_VERSION = @as(c_int, 2);
-pub const SDL_MICRO_VERSION = @as(c_int, 18);
+pub const SDL_MICRO_VERSION = @as(c_int, 0);
 pub inline fn SDL_VERSIONNUM(major: anytype, minor: anytype, patch: anytype) @TypeOf(((major * @import("std").zig.c_translation.promoteIntLiteral(c_int, 1000000, .decimal)) + (minor * @as(c_int, 1000))) + patch) {
     _ = &major;
     _ = &minor;
@@ -8313,4 +8300,38 @@ pub const SDL_GetClosestDisplayMode = @compileError("unable to translate macro: 
 // /usr/include/SDL3/SDL_oldnames.h:1312:9
 pub const SDL_GetDisplayOrientation = @compileError("unable to translate macro: undefined identifier `SDL_GetDisplayOrientation_renamed_SDL_GetCurrentDisplayOrientation`");
 // /usr/include/SDL3/SDL_oldnames.h:1313:9
-pub const SDL_GetPointDisplayIndex = @compileError("unable to translate macro: undefined identifier `SDL_GetPointDisplayIndex_renamed_SDL_GetDisplayForPoint
+pub const SDL_GetPointDisplayIndex = @compileError("unable to translate macro: undefined identifier `SDL_GetPointDisplayIndex_renamed_SDL_GetDisplayForPoint`");
+// /usr/include/SDL3/SDL_oldnames.h:1314:9
+pub const SDL_GetRectDisplayIndex = @compileError("unable to translate macro: undefined identifier `SDL_GetRectDisplayIndex_renamed_SDL_GetDisplayForRect`");
+// /usr/include/SDL3/SDL_oldnames.h:1315:9
+pub const SDL_GetWindowDisplayIndex = @compileError("unable to translate macro: undefined identifier `SDL_GetWindowDisplayIndex_renamed_SDL_GetDisplayForWindow`");
+// /usr/include/SDL3/SDL_oldnames.h:1316:9
+pub const SDL_GetWindowDisplayMode = @compileError("unable to translate macro: undefined identifier `SDL_GetWindowDisplayMode_renamed_SDL_GetWindowFullscreenMode`");
+// /usr/include/SDL3/SDL_oldnames.h:1317:9
+pub const SDL_HasWindowSurface = @compileError("unable to translate macro: undefined identifier `SDL_HasWindowSurface_renamed_SDL_WindowHasSurface`");
+// /usr/include/SDL3/SDL_oldnames.h:1318:9
+pub const SDL_IsScreenSaverEnabled = @compileError("unable to translate macro: undefined identifier `SDL_IsScreenSaverEnabled_renamed_SDL_ScreenSaverEnabled`");
+// /usr/include/SDL3/SDL_oldnames.h:1319:9
+pub const SDL_SetWindowDisplayMode = @compileError("unable to translate macro: undefined identifier `SDL_SetWindowDisplayMode_renamed_SDL_SetWindowFullscreenMode`");
+// /usr/include/SDL3/SDL_oldnames.h:1320:9
+pub const SDL_WINDOW_ALLOW_HIGHDPI = @compileError("unable to translate macro: undefined identifier `SDL_WINDOW_ALLOW_HIGHDPI_renamed_SDL_WINDOW_HIGH_PIXEL_DENSITY`");
+// /usr/include/SDL3/SDL_oldnames.h:1321:9
+pub const SDL_WINDOW_INPUT_GRABBED = @compileError("unable to translate macro: undefined identifier `SDL_WINDOW_INPUT_GRABBED_renamed_SDL_WINDOW_MOUSE_GRABBED`");
+// /usr/include/SDL3/SDL_oldnames.h:1322:9
+pub const SDL_WINDOW_SKIP_TASKBAR = @compileError("unable to translate macro: undefined identifier `SDL_WINDOW_SKIP_TASKBAR_renamed_SDL_WINDOW_UTILITY`");
+// /usr/include/SDL3/SDL_oldnames.h:1323:9
+pub const SDL_vulkan_h_ = "";
+pub const VK_DEFINE_HANDLE = @compileError("unable to translate macro: untranslatable usage of arg `object`");
+// /usr/include/SDL3/SDL_vulkan.h:59:9
+pub const VK_DEFINE_NON_DISPATCHABLE_HANDLE = @compileError("unable to translate macro: untranslatable usage of arg `object`");
+// /usr/include/SDL3/SDL_vulkan.h:62:9
+pub const __locale_struct = struct___locale_struct;
+pub const _IO_FILE = struct__IO_FILE;
+pub const tm = struct_tm;
+pub const SDL_iconv_data_t = struct_SDL_iconv_data_t;
+pub const SDL_GLContextState = struct_SDL_GLContextState;
+pub const _XEvent = union__XEvent;
+pub const VkInstance_T = struct_VkInstance_T;
+pub const VkPhysicalDevice_T = struct_VkPhysicalDevice_T;
+pub const VkSurfaceKHR_T = struct_VkSurfaceKHR_T;
+pub const VkAllocationCallbacks = struct_VkAllocationCallbacks;

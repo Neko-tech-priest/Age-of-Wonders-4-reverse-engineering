@@ -1,15 +1,15 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const linux = std.os.linux;
-const print = std.debug.print;
 const exit = std.process.exit;
+
+const GlobalState = @import("GlobalState.zig");
 
 const PageAllocator = @import("PageAllocator.zig");
 const CustomFS = @import("CustomFS.zig");
+const CustomIO = @import("CustomIO.zig");
 
 const AoW4_clb = @import("AoW4_clb.zig");
-
-const GlobalState = @import("GlobalState.zig");
 
 const archivesPaths = [_][*:0]const u8
 {
@@ -20,7 +20,8 @@ const archivesPaths = [_][*:0]const u8
 };
 pub fn main() void
 {
-    GlobalState.stdout = std.io.getStdOut().writer();
+    if(builtin.os.tag == .windows)
+        CustomIO.stdoutFD = std.os.windows.peb().ProcessParameters.hStdOutput;
     defer GlobalState.arena.deinit();
     GlobalState.allocator, const is_debug = comptime switch(builtin.mode)
     {

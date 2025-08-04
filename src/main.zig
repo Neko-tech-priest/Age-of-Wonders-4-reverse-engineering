@@ -14,6 +14,7 @@ const CustomMem = @import("CustomMem.zig");
 const alignPtrCast = CustomMem.alignPtrCast;
 
 const CustomFS = @import("CustomFS.zig");
+const CustomIO = @import("CustomIO.zig");
 // const CustomThreads = @import("CustomThreads.zig");
 const PageAllocator = @import("PageAllocator.zig");
 // const memcpy = CustomMem.memcpy;
@@ -40,6 +41,85 @@ const Square = @import("Square.zig");
 const Hex = @import("Hex.zig");
 const Simplexnoise1234 = @import("Simplexnoise1234.zig");
 
+const RAPID_SECRET: [3]u64 = .{ 0x2d358dccaa6c78a5, 0x8bb84b93962eacc9, 0x4b33a62ed433d4a3 };
+inline fn mum(a: *u64, b: *u64) void {
+    const r = @as(u128, a.*) * b.*;
+    a.* = @truncate(r);
+    b.* = @truncate(r >> 64);
+}
+inline fn mix(a: u64, b: u64) u64 {
+    var copy_a = a;
+    var copy_b = b;
+    mum(&copy_a, &copy_b);
+    return copy_a ^ copy_b;
+}
+inline fn r32(p: []const u8) u64 {
+    return p[0..4];
+}
+inline fn r64(p: []const u8) u64 {
+    return @bitCast(p[0..8].*);
+}
+pub fn rapidHash(seed: u64, input: []const u8) u64 {
+    const sc = RAPID_SECRET;
+    const len = input.len;
+    var a: u64 = 0;
+    var b: u64 = 0;
+    var k = input;
+    var is: [3]u64 = .{ seed, 0, 0 };
+
+    is[0] ^= mix(seed ^ sc[0], sc[1]) ^ len;
+
+    if (len <= 16) {
+        if (len >= 4) {
+            const d: u64 = ((len & 24) >> @intCast(len >> 3));
+            const e = len - 4;
+            a = (r32(k) << 32) | r32(k[e..]);
+            b = ((r32(k[d..]) << 32) | r32(k[(e - d)..]));
+        } else if (len > 0)
+            a = (@as(u64, k[0]) << 56) | (@as(u64, k[len >> 1]) << 32) | @as(u64, k[len - 1]);
+    } else {
+        var remain = len;
+        if (len > 48) {
+            is[1] = is[0];
+            is[2] = is[0];
+            while (remain >= 96) {
+                inline for (0..6) |i| {
+                    const m1 = r64(k[8 * i * 2 ..]);
+                    const m2 = r64(k[8 * (i * 2 + 1) ..]);
+                    is[i % 3] = mix(m1 ^ sc[i % 3], m2 ^ is[i % 3]);
+                }
+                k = k[96..];
+                remain -= 96;
+            }
+            if (remain >= 48) {
+                inline for (0..3) |i| {
+                    const m1 = r64(k[8 * i * 2 ..]);
+                    const m2 = r64(k[8 * (i * 2 + 1) ..]);
+                    is[i] = mix(m1 ^ sc[i], m2 ^ is[i]);
+                }
+                k = k[48..];
+                remain -= 48;
+            }
+
+            is[0] ^= is[1] ^ is[2];
+        }
+
+        if (remain > 16) {
+            is[0] = mix(r64(k) ^ sc[2], r64(k[8..]) ^ is[0] ^ sc[1]);
+            if (remain > 32) {
+                is[0] = mix(r64(k[16..]) ^ sc[2], r64(k[24..]) ^ is[0]);
+            }
+        }
+
+        a = r64(input[len - 16 ..]);
+        b = r64(input[len - 8 ..]);
+    }
+
+    a ^= sc[1];
+    b ^= is[0];
+    mum(&a, &b);
+    return mix(a ^ sc[0] ^ len, b ^ sc[1]);
+}
 const ResourceID = struct
 {
     @"SM_Fertile_Plains_Grass_01_TerrainTexture.tga": u16,
@@ -54,31 +134,31 @@ pub const hashes: [std.meta.fields(ResourceID).len]u64 = blk:
 {
     const resourceStrings = std.meta.fieldNames(ResourceID);
     var localHashes: [std.meta.fields(ResourceID).len]u64 = undefined;
-    for (&localHashes, resourceStrings) |*hash, res| hash.* = std.hash.RapidHash.hash(0, res);
+    for (&localHashes, resourceStrings) |*hash, res| hash.* = rapidHash(0, res);
     break :blk localHashes;
 };
 pub var resourceID: ResourceID = undefined;
-noinline fn test_switch() void
-{
-    const stdout = GlobalState.stdout;
-    goto: switch (enum { exit,block1, block2 }.block1)
-    {
-        .exit =>
-        {
-//             exit(0);
-        },
-        .block1 =>
-        {
-            stdout.print("block 1\n", .{}) catch unreachable;
-            continue :goto .block2;
-        },
-        .block2 =>
-        {
-            stdout.print("block 2\n", .{}) catch unreachable;
-            continue :goto .exit;
-        },
-    }
-}
+// noinline fn test_switch() void
+// {
+//     const stdout = GlobalState.stdout;
+//     goto: switch (enum { exit,block1, block2 }.block1)
+//     {
+//         .exit =>
+//         {
+//             exit();
+//         },
+//         .block1 =>
+//         {
+//             stdout.print("block 1\n", .{}) catch unreachable;
+//             continue :goto .block2;
+//         },
+//         .block2 =>
+//         {
+//             stdout.print("block 2\n", .{}) catch unreachable;
+//             continue :goto .exit;
+//         },
+//     }
+// }
 noinline fn test_invSqrt() void
 {
     //     const reader = @import("std").io.getStdIn().reader();
@@ -98,9 +178,8 @@ noinline fn test_invSqrt() void
 }
 pub fn main() !void
 {
-    GlobalState.stdout = std.io.getStdOut().writer();
-//     test_switch();
-    defer GlobalState.arena.deinit();
+    if(builtin.os.tag == .windows)
+        CustomIO.stdoutFD = std.os.windows.peb().ProcessParameters.hStdOutput;
     GlobalState.allocator, const is_debug = comptime switch(builtin.mode)
     {
         .Debug, .ReleaseSafe => .{GlobalState.debugAllocator.allocator(), true},
@@ -111,7 +190,15 @@ pub fn main() !void
         if(is_debug)
             _ = GlobalState.debugAllocator.deinit();
     }
-    const stdout = GlobalState.stdout;
+//     const float: f64 = -1.0;
+//     const int: u64 = @bitCast(float);
+//     CustomIO.print("d\n", .{int});
+//     const stdout = CustomIO.stdout;
+//     const hello = "hello";
+//     const int: i32 = -113;
+//     stdout.print("{any}\n", @TypeOf(hello));
+//     stdout.print("{s}\n", .{@typeName(@TypeOf(int))}) catch unreachable;
+//     CustomIO.print("s\nd\n", .{hello, int});
     _ = SDL.SDL_Init(SDL.SDL_INIT_VIDEO);
     defer _ = SDL.SDL_Quit();
     WindowGlobalState._window = SDL.SDL_CreateWindow(
@@ -381,7 +468,7 @@ pub fn main() !void
 //         Vulkan.vkFreeMemory(VulkanGlobalState._device, SquareVkIndexDeviceMemory, null);
 //     }
 }
-    const mapRadius = 10;
+    const mapRadius = 2;
     comptime var hexesCount: u64 = 1;
     comptime
     {
@@ -392,7 +479,7 @@ pub fn main() !void
             hexesCount+=countAddition;
         }
     }
-    stdout.print("hexesCount: {d}\n", .{hexesCount}) catch unreachable;
+    CustomIO.print("sd\n", .{"hexesCount: ", hexesCount});
     var hexesData: [hexesCount]Hex.HexData = undefined;
     //
     for(0..hexesCount) |i|
@@ -561,15 +648,14 @@ pub fn main() !void
 //     const time: isize = (timespec2.sec-timespec1.sec)*1000 + (@as(i64, @intCast(@as(u64, @intCast(timespec2.nsec))/1000000)) - @as(i64, @intCast(@as(u64, @intCast(timespec1.nsec))/1000000)));
 //     print("pipelines time: {d} ms\n", .{time});
 
-//     Pipelines.Create_TreesSolid_Pipeline();
-//     Pipelines.Create_TreesTransparency_Pipeline();
+    Pipelines.Create_TreesSolid_Pipeline();
+    Pipelines.Create_TreesTransparency_Pipeline();
     defer
     {
         Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Pipelines.FernSolid_Pipeline, null);
-//         Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Pipelines.DepthTransparency_Pipeline, null);
         Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Pipelines.FernTransparency_Pipeline, null);
-//         Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Pipelines.TreesSolid_Pipeline, null);
-//         Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Pipelines.TreesTransparency_Pipeline, null);
+        Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Pipelines.TreesSolid_Pipeline, null);
+        Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Pipelines.TreesTransparency_Pipeline, null);
     }
     // Square noise map
 {
@@ -630,7 +716,7 @@ pub fn main() !void
     var windowPresent: bool = true;
     //
     var currentFrame: usize = 0;
-    const cameraMove = 4;
+    const cameraMove = 2;
     const cameraRotate = 5;
 //     var frame: u64 = 0;
     while (!bQuit)
@@ -858,11 +944,6 @@ pub fn main() !void
             const camera_z = -Camera.camera_translate_z;
 
             var hexesDrawCount: u32 = 0;
-//             for(0..hexesCount) |hexIndex|
-//             {
-//                 alignPtrCast([*][2]f32, hexesPosMapped)[hexIndex][0] = hexesData[hexIndex].x;
-//                 alignPtrCast([*][2]f32, hexesPosMapped)[hexIndex][1] = hexesData[hexIndex].y;
-//             }
             for(0..hexesCount) |hexIndex|
             {
                 if(hexesData[hexIndex].x < camera_x+camera_z
@@ -876,70 +957,23 @@ pub fn main() !void
                     hexesDrawCount+=1;
                 }
             }
-            Vulkan.vkCmdBindPipeline(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines.FernSolid_Pipeline);
-            Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].indicesCount, hexesDrawCount, 0, 0, 0);
-
-            Vulkan.vkCmdBindPipeline(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines.FernTransparency_Pipeline);
-            Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].indicesCount, hexesDrawCount, 0, 0, 0);
-//             for(0..hexesCount) |hexIndex|
-//             {
-//                 if(hexesData[hexIndex].x < camera_x+camera_z
-//                    and hexesData[hexIndex].x > camera_x-camera_z
-//                    and hexesData[hexIndex].y < camera_y+camera_z
-//                    and hexesData[hexIndex].y > camera_y-camera_z
-//                 )
-//                 {
-//                     alignPtrCast(*u64, &hexPushConstants[0]).* = CustomMem.readFromPtr(u64, &hexesData[hexIndex]);
-//                     alignPtrCast(*u64, &hexPushConstants[8]).* = AoW4_archive.meshesVkDeviceAddress+AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].vertexVkBufferOffset;
-//                     alignPtrCast(*u32, &hexPushConstants[16]).* = AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].verticesCount;
-//                     alignPtrCast(*u32, &hexPushConstants[20]).* = resourceID.@"LushGrass_Temperate_[DIFF_DXT5].tga";
-//                     Vulkan.vkCmdPushConstants(cmd, Pipelines.FernSolid_PipelineLayout, Vulkan.VK_SHADER_STAGE_VERTEX_BIT, 0, 20, &hexPushConstants);
-//                     Vulkan.vkCmdPushConstants(cmd, Pipelines.FernSolid_PipelineLayout, Vulkan.VK_SHADER_STAGE_FRAGMENT_BIT, 20, 4, &hexPushConstants[20]);
-//
-//                     Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].indicesCount, 1, 0, 0, 0);
-//                 }
-//             }
-//             Vulkan.vkCmdBindPipeline(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines.FernTransparency_Pipeline);
-//             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].indicesCount, 1, 0, 0, 0);
-//             for(0..hexesCount) |hexIndex|
-//             {
-//                 if(hexesData[hexIndex].x < camera_x+camera_z
-//                     and hexesData[hexIndex].x > camera_x-camera_z
-//                     and hexesData[hexIndex].y < camera_y+camera_z
-//                     and hexesData[hexIndex].y > camera_y-camera_z
-//                 )
-//                 {
-//                     alignPtrCast(*u64, &hexPushConstants[0]).* = CustomMem.readFromPtr(u64, &hexesData[hexIndex]);
-//                     alignPtrCast(*u64, &hexPushConstants[8]).* = AoW4_archive.meshesVkDeviceAddress+AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].vertexVkBufferOffset;
-//                     alignPtrCast(*u32, &hexPushConstants[16]).* = AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].verticesCount;
-//                     alignPtrCast(*u32, &hexPushConstants[20]).* = resourceID.@"LushGrass_Temperate_[DIFF_DXT5].tga";
-//                     Vulkan.vkCmdPushConstants(cmd, Pipelines.FernSolid_PipelineLayout, Vulkan.VK_SHADER_STAGE_VERTEX_BIT, 0, 20, &hexPushConstants);
-//                     Vulkan.vkCmdPushConstants(cmd, Pipelines.FernSolid_PipelineLayout, Vulkan.VK_SHADER_STAGE_FRAGMENT_BIT, 20, 4, &hexPushConstants[20]);
-//
-//                     Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].indicesCount, 1, 0, 0, 0);
-//                 }
-//             }
-
 //             Vulkan.vkCmdBindPipeline(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines.FernSolid_Pipeline);
-//             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].indicesCount, hexesCount, 0, 0, 0);
-//
+//             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].indicesCount, hexesDrawCount, 0, 0, 0);
 //             Vulkan.vkCmdBindPipeline(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines.FernTransparency_Pipeline);
-//             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].indicesCount, hexesCount, 0, 0, 0);
+//             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].indicesCount, hexesDrawCount, 0, 0, 0);
 
             // trees
+            alignPtrCast(*u64, &hexPushConstants[8]).* = AoW4_archive.meshesVkDeviceAddress+AoW4_archive.meshes[resourceID.@"Temperate_Forest_06_PineTrees"].vertexVkBufferOffset;
+            alignPtrCast(*u32, &hexPushConstants[16]).* = AoW4_archive.meshes[resourceID.@"Temperate_Forest_06_PineTrees"].verticesCount;
+            alignPtrCast(*u32, &hexPushConstants[20]).* = resourceID.@"PineTrees_[DIFF_DXT5].tga";
+            Vulkan.vkCmdPushConstants(cmd, Pipelines.FernSolid_PipelineLayout, Vulkan.VK_SHADER_STAGE_VERTEX_BIT, 0, 20, &hexPushConstants);
+            Vulkan.vkCmdPushConstants(cmd, Pipelines.FernSolid_PipelineLayout, Vulkan.VK_SHADER_STAGE_FRAGMENT_BIT, 20, 4, &hexPushConstants[20]);
+            Vulkan.vkCmdBindIndexBuffer(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshesVkBuffer, AoW4_archive.meshes[resourceID.@"Temperate_Forest_06_PineTrees"].indexVkBufferOffset, Vulkan.VK_INDEX_TYPE_UINT16);
 
-//             alignPtrCast(*u64, &hexPushConstants[0]).* = AoW4_archive.meshesVkDeviceAddress+AoW4_archive.meshes[resourceID.@"Temperate_Forest_06_PineTrees"].vertexVkBufferOffset;
-//             alignPtrCast(*u32, &hexPushConstants[8]).* = AoW4_archive.meshes[resourceID.@"Temperate_Forest_06_PineTrees"].verticesCount;
-//             alignPtrCast(*u32, &hexPushConstants[12]).* = resourceID.@"PineTrees_[DIFF_DXT5].tga";
-//             Vulkan.vkCmdPushConstants(cmd, Pipelines.FernSolid_PipelineLayout, Vulkan.VK_SHADER_STAGE_VERTEX_BIT, 0, 12, &hexPushConstants);
-//             Vulkan.vkCmdPushConstants(cmd, Pipelines.FernSolid_PipelineLayout, Vulkan.VK_SHADER_STAGE_FRAGMENT_BIT, 12, 4, &hexPushConstants[12]);
-//             Vulkan.vkCmdBindIndexBuffer(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshesVkBuffer, AoW4_archive.meshes[resourceID.@"Temperate_Forest_06_PineTrees"].indexVkBufferOffset, Vulkan.VK_INDEX_TYPE_UINT16);
-//
 //             Vulkan.vkCmdBindPipeline(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines.TreesSolid_Pipeline);
-//             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshes[resourceID.@"Temperate_Forest_06_PineTrees"].indicesCount, 1, 0, 0, 0);
-// //
+//             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshes[resourceID.@"Temperate_Forest_06_PineTrees"].indicesCount, hexesDrawCount, 0, 0, 0);
 //             Vulkan.vkCmdBindPipeline(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines.TreesTransparency_Pipeline);
-//             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshes[resourceID.@"Temperate_Forest_06_PineTrees"].indicesCount, 1, 0, 0, 0);
+//             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshes[resourceID.@"Temperate_Forest_06_PineTrees"].indicesCount, hexesDrawCount, 0, 0, 0);
 
             Vulkan.vkCmdEndRendering(VulkanGlobalState._commandBuffers[currentFrame]);
             VkImage.transitionImage(cmd, VulkanGlobalState._swapchainImages[swapchainImageIndex],

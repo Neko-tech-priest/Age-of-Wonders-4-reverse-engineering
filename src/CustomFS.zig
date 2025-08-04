@@ -9,11 +9,9 @@ const windows = std.os.windows;
 const kernel32 = windows.kernel32;
 const ntdll = windows.ntdll;
 // const print = std.debug.print;
-const exit = std.process.exit;
+// const exit = std.process.exit;
 
 const CustomMem = @import("CustomMem.zig");
-
-const GlobalState = @import("GlobalState.zig");
 const fd_t = std.posix.fd_t;
 
 // pub const _close = switch (native_os) {
@@ -28,6 +26,14 @@ const fd_t = std.posix.fd_t;
 //     else => @compileError("unsupported target"),
 // };
 // pub extern "ntdll" fn NtOpenFile(FileHandle: *windows.HANDLE, DesiredAccess: windows.ACCESS_MASK, ObjectAttributes: *windows.OBJECT_ATTRIBUTES, IoStatusBlock: *windows.IO_STATUS_BLOCK,   ShareAccess: windows.ULONG, OpenOptions: windows.ULONG ) callconv(.winapi) windows.NTSTATUS;
+
+// pub var stdoutFD:fd_t = undefined;
+// // pub var stdoutFile: std.fs.File = undefined;
+// comptime
+// {
+//     if(native_os == .linux)
+//         stdoutFD = 2;
+// }
 
 inline fn asciiToWide(src: [*:0]const u8, dst: [*:0]u16) void
 {
@@ -150,17 +156,6 @@ pub fn open(path: [*:0]const u8, comptime flags: linux.O) fd_t
                 .SecurityQualityOfService = null,
             };
             var IoStatusBlock: windows.IO_STATUS_BLOCK = undefined;
-//             const ShareAccess = comptime switch((flags.ACCMODE))
-//             {
-//                 posix.ACCMODE.RDONLY => windows.FILE_SHARE_READ,
-//                 posix.ACCMODE.WRONLY =>windows.FILE_SHARE_WRITE | windows.FILE_SHARE_DELETE,
-//                 posix.ACCMODE.RDWR =>windows.FILE_SHARE_READ | windows.FILE_SHARE_WRITE | windows.FILE_SHARE_DELETE,
-//             };
-//             const CreateDisposition: u32 = switch(flags.CREAT)
-//             {
-//                 true => windows.FILE_CREATE,
-//                 false => windows.FILE_OPEN
-//             };
             const CreateOptions: u32 = switch(flags.DIRECTORY)
             {
                 true => windows.FILE_DIRECTORY_FILE | windows.FILE_SYNCHRONOUS_IO_NONALERT | windows.FILE_OPEN_FOR_BACKUP_INTENT,

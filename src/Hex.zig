@@ -26,7 +26,6 @@ pub const Vertex = struct
 	position: [3]f32
 };
 
-
 pub fn Create_DiffuseMaterial_VkDescriptorSetLayout(texturesCount: u32, descriptorSetLayout: *Vulkan.VkDescriptorSetLayout) void
 {
 	const descriptorSetLayoutBindings = [2]Vulkan.VkDescriptorSetLayoutBinding
@@ -134,7 +133,7 @@ pub fn createHexPaletteSampler() void
         .minFilter = Vulkan.VK_FILTER_LINEAR,
         // VK_SAMPLER_MIPMAP_MODE_NEAREST
         // VK_SAMPLER_MIPMAP_MODE_LINEAR
-        .mipmapMode = Vulkan.VK_SAMPLER_MIPMAP_MODE_LINEAR,
+//         .mipmapMode = Vulkan.VK_SAMPLER_MIPMAP_MODE_LINEAR,
         .addressModeU = Vulkan.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
         .addressModeV = Vulkan.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
         .addressModeW = Vulkan.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
@@ -146,7 +145,7 @@ pub fn createHexPaletteSampler() void
 //       .minLod = 0.0,
 //       .maxLod = Vulkan.VK_LOD_CLAMP_NONE,
 //       .borderColor = Vulkan.VK_BORDER_COLOR_INT_OPAQUE_BLACK,
-//       .unnormalizedCoordinates = Vulkan.VK_TRUE,
+      .unnormalizedCoordinates = Vulkan.VK_TRUE,
 
     };
     VK_CHECK(Vulkan.vkCreateSampler(VulkanGlobalState._device, &samplerInfo, null, &_paletteSampler));

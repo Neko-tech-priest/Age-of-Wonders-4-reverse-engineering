@@ -9,7 +9,7 @@ layout(set = 1, binding = 1) uniform sampler generalSampler;
 
 layout(push_constant) uniform constants
 {
-    layout(offset = 12)uint textureIndex;
+    layout(offset = 12+8)uint textureIndex;
 }
 pushConstants;
 

@@ -1,11 +1,14 @@
 const std = @import("std");
-const linux = std.os.linux;
-const mem = std.mem;
-const exit = std.process.exit;
-const fd_t = std.posix.fd_t;
 const builtin = @import("builtin");
+const linux = std.os.linux;
+const fd_t = std.posix.fd_t;
+
+const GlobalState = @import("GlobalState.zig");
+const VulkanGlobalState = @import("VulkanGlobalState.zig");
+const VK_CHECK = VulkanGlobalState.VK_CHECK;
 
 const CustomFS = @import("CustomFS.zig");
+const CustomIO = @import("CustomIO.zig");
 const CustomMem = @import("CustomMem.zig");
 const alignPtrCast = CustomMem.alignPtrCast;
 // const allocInFixedBuffer = CustomMem.allocInFixedBuffer;
@@ -14,8 +17,8 @@ const readFromPtr = CustomMem.readFromPtr;
 const memcpy = CustomMem.memcpy;
 const memcpyDstAlign = CustomMem.memcpyDstAlign;
 const ptrOnValue = CustomMem.ptrOnValue;
-
-const GlobalState = @import("GlobalState.zig");
+const CustomThreads = @import("CustomThreads.zig");
+const exit = CustomThreads.exit;
 const PageAllocator = @import("PageAllocator.zig");
 
 const Texture = @import("Texture.zig").Texture;
@@ -23,8 +26,6 @@ const Vulkan = @import("Vulkan.zig");
 const VkBuffer = @import("VkBuffer.zig");
 const VkImage = @import("VkImage.zig");
 const VkDeviceMemory = @import("VkDeviceMemory.zig");
-const VulkanGlobalState = @import("VulkanGlobalState.zig");
-const VK_CHECK = VulkanGlobalState.VK_CHECK;
 
 const Hex = @import("Hex.zig");
 
@@ -404,7 +405,6 @@ fn loadMeshes(buffer: [*] u8, meshesData: [*]const MeshData, meshesOffsets: [*]A
 }
 pub fn clb_custom_read(dirfd: fd_t, path: []const u8, archive: *ArchiveGPU) void
 {
-    const stdout = GlobalState.stdout;
     const filefd: fd_t = CustomFS.openat(dirfd, @ptrCast(path.ptr), .{.ACCMODE = .RDONLY});
     var fileStat: linux.Stat = undefined;
     _ = CustomFS.fstat(filefd, &fileStat);
@@ -419,14 +419,13 @@ pub fn clb_custom_read(dirfd: fd_t, path: []const u8, archive: *ArchiveGPU) void
     {
         const string = "incorrect clb signature!\n";
         _ = CustomFS.write(1, string, string.len);
-        exit(0);
+        exit();
     }
-//     archive.texturesCount = fileBufferPtrItr[4];
     archive.texturesCount = alignPtrCast(*u16, fileBufferPtrItr+4).*;
     archive.meshesCount = alignPtrCast(*u16, fileBufferPtrItr+6).*;
     fileBufferPtrItr+=8;
-    stdout.print("texturesCount: {d}\n", .{archive.texturesCount}) catch unreachable;
-    stdout.print("meshesCount: {d}\n", .{archive.meshesCount}) catch unreachable;
+    CustomIO.print("sd\n", .{"texturesCount: ", archive.texturesCount});
+    CustomIO.print("sd\n", .{"meshesCount: ", archive.meshesCount});
     const hashesCount: u64 = archive.texturesCount+archive.meshesCount;
     const resourceID: [*]u16 = @ptrCast(&main.resourceID);
     for(0..main.hashes.len) |enumHash|
