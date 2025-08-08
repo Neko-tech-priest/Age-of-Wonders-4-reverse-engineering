@@ -1,8 +1,9 @@
 #version 450
 #extension GL_EXT_nonuniform_qualifier : require
 
-layout(location = 0) in vec2 inPos;
+layout(location = 0) in vec3 inPos;
 layout(location = 1) in flat uint inTextureIndex;
+layout(location = 2) in flat uint inPaletteIndex;
 
 layout(set = 1, binding = 0) uniform texture2D diffuseTextures[];
 layout(set = 1, binding = 1) uniform sampler terrainSampler;
@@ -12,21 +13,21 @@ layout(location = 0) out vec4 outColor;
 
 // vec3 GroundIBL = vec3(0.12, 0.26, 0.17);
 
-float DirectLightIntensity = 4.0;
+float DirectLightIntensity = 3.0;
 // vec3 SunDirection = (vec3(0, 0, 1));
 // vec3 SunDirection = normalize(vec3(1, 1, 1));
 vec3 SunDirection = (vec3(1, 1, 1));
 float ambient = 10.0;
 void main()
 {
-    vec4 data = texture(sampler2D(diffuseTextures[nonuniformEXT(inTextureIndex)], terrainSampler), inPos);
+    vec4 data = texture(sampler2D(diffuseTextures[nonuniformEXT(inTextureIndex)], terrainSampler), inPos.xy);
     vec3 normal;
 //     normal.xy = data.xy;
     normal.xy = data.xy * 2.0 - 1.0;
     normal.z = sqrt(1.0 - normal.x * normal.x - normal.y * normal.y);
 	float alpha = data.a;
 // 	vec3 color = texture(palette, vec2(alpha * 0.8750 - 0.0625, 0.5)).rgb;
-    vec3 color = textureLod(palette, vec2(alpha * 0.8750*8 - 0.0625*8, 0.5), 0).rgb;
+    vec3 color = textureLod(palette, vec2(alpha * 0.8750*8 - 0.0625*8, inPaletteIndex+0.5), 0).rgb;
     float diff = min(max(dot(normal, SunDirection), 0.0), 1.0);
 //     color += GroundIBL*0.5;
     color *= diff;

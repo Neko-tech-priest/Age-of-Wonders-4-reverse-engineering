@@ -23,7 +23,7 @@ pub var _cameraDescriptorSets: [VulkanGlobalState.FRAME_OVERLAP]Vulkan.VkDescrip
 
 pub var camera_translate_x: f32 = 0;
 pub var camera_translate_y: f32 = 0;
-pub var camera_translate_z: f32 = -2;
+pub var camera_translate_z: f32 = -4;
 pub var camera_rotate_x: f32 = 0;
 pub var camera_rotate_y: f32 = 0;
 pub var camera_rotate_z: f32 = 0;

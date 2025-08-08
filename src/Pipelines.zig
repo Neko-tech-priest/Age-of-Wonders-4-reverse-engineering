@@ -236,13 +236,9 @@ pub fn Create_FernSolid_Pipeline() void
 //         .rasterizerDiscardEnable = Vulkan.VK_FALSE,
         .polygonMode = Vulkan.VK_POLYGON_MODE_FILL,
         .lineWidth = 1.0,
-        .cullMode = Vulkan.VK_CULL_MODE_NONE,
+//         .cullMode = Vulkan.VK_CULL_MODE_BACK_BIT,
         .frontFace = Vulkan.VK_FRONT_FACE_CLOCKWISE,
         //no depth bias
-//         .depthBiasEnable = Vulkan.VK_FALSE,
-//         .depthBiasConstantFactor = 0.0,
-//         .depthBiasClamp = 0.0,
-//         .depthBiasSlopeFactor = 0.0,
     };
     const MultisampleState = Vulkan.VkPipelineMultisampleStateCreateInfo
     {
@@ -374,13 +370,9 @@ pub fn Create_FernTransparency_Pipeline() void
 //         .rasterizerDiscardEnable = Vulkan.VK_FALSE,
         .polygonMode = Vulkan.VK_POLYGON_MODE_FILL,
         .lineWidth = 1.0,
-        .cullMode = Vulkan.VK_CULL_MODE_NONE,
+//         .cullMode = Vulkan.VK_CULL_MODE_BACK_BIT,
         .frontFace = Vulkan.VK_FRONT_FACE_CLOCKWISE,
         //no depth bias
-//         .depthBiasEnable = Vulkan.VK_FALSE,
-//         .depthBiasConstantFactor = 0.0,
-//         .depthBiasClamp = 0.0,
-//         .depthBiasSlopeFactor = 0.0,
     };
     const MultisampleState = Vulkan.VkPipelineMultisampleStateCreateInfo
     {

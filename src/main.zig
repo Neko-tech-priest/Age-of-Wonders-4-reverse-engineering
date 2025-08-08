@@ -1,5 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const meta = std.meta;
 
 const SDL = @import("SDL3.zig");
 const Vulkan = @import("Vulkan.zig");
@@ -123,6 +124,7 @@ pub fn rapidHash(seed: u64, input: []const u8) u64 {
 const ResourceID = struct
 {
     @"SM_Fertile_Plains_Grass_01_TerrainTexture.tga": u16,
+    @"SM_Forest_Forest_01_TerrainTexture.tga": u16,
     @"LushGrass_Temperate_[DIFF_DXT5].tga": u16,
     @"BirchTrees_[DIFF_DXT5].tga": u16,
     @"PineTrees_[DIFF_DXT5].tga": u16,
@@ -130,14 +132,86 @@ const ResourceID = struct
     @"Temperate_Tree_03_BirchTrees1": u16,
     @"Temperate_Forest_06_PineTrees": u16,
 };
-pub const hashes: [std.meta.fields(ResourceID).len]u64 = blk:
+pub const hashes: [meta.fields(ResourceID).len]u64 = blk:
 {
-    const resourceStrings = std.meta.fieldNames(ResourceID);
-    var localHashes: [std.meta.fields(ResourceID).len]u64 = undefined;
+    const resourceStrings = meta.fieldNames(ResourceID);
+    var localHashes: [meta.fields(ResourceID).len]u64 = undefined;
     for (&localHashes, resourceStrings) |*hash, res| hash.* = rapidHash(0, res);
     break :blk localHashes;
 };
 pub var resourceID: ResourceID = undefined;
+const ColorTable = struct
+{
+    Arctic_Forest_00: [32]u8 =
+    .{
+        128, 134, 143, 255,
+        128, 134, 143, 255,
+        64,  33,  57,  255,
+        23,  27,  50,  255,
+        82,  48,  17,  255,
+        85,  65,  45,  255,
+        75,  67,  53,  255,
+        80,  64,  17,  255,
+    },
+    Sahara_Forest_00: [32]u8 =
+    .{
+        99,  83,  21,  255,
+        92,  75,  16,  255,
+        85,  67,  15,  255,
+        73,  55,  12,  255,
+        54,  42,  13,  255,
+        130, 91,  45,  255,
+        158, 119, 52,  255,
+        158, 119, 52,  255,
+    },
+    Temperate_Grassland_00: [32]u8 =
+    .{
+        98, 71, 41, 255,
+        58, 71, 20, 255,
+        84, 89, 32, 255,
+        61, 92, 15, 255,
+        61, 84, 20, 255,
+        55, 92, 14, 255,
+        46, 113, 19, 255,
+        75, 109, 20, 255,
+    },
+    Temperate_Forest_00: [32]u8 =
+    .{
+        72, 85, 20, 255,
+        80, 82, 34, 255,
+        57, 64, 34, 255,
+        41, 50, 28, 255,
+        82, 48, 17, 255,
+        85, 65, 45, 255,
+        75, 67, 53, 255,
+        80, 64, 17, 255,
+    },
+};
+const TexturesEnum = enum(u64)
+{
+    Arctic_Forest_00,
+    Sahara_Forest_00,
+    Temperate_Grassland_00,
+    Temperate_Forest_00,
+};
+// const TexturesEnum = ret:
+// {
+//     const palettesStrings = meta.fieldNames(ColorTable);
+//     var fields: [palettesStrings.len]std.builtin.Type.EnumField = undefined;
+//     for(&fields, palettesStrings, 0..) |*field, paletteString, i|
+//     {
+//         field.name = paletteString;
+//         field.value = i;
+//     }
+//     break :ret @Type(.{
+//         .Enum = .{
+//             .tag_type = std.math.IntFittingRange(0, fields.len),
+//                      .fields = fields,
+//                      .decls = &.{},
+//                      .is_exhaustive = true,
+//         },
+//     });
+// };
 // noinline fn test_switch() void
 // {
 //     const stdout = GlobalState.stdout;
@@ -176,6 +250,8 @@ noinline fn test_invSqrt() void
     //     print("value: {d}\n", .{@as(u32, @bitCast(Math.invSqrt32Fast(value)))});
     //     exit(0);
 }
+const HexVertices = Hex.createHexVertices();
+const HexIndices = Hex.createHexIndices();
 pub fn main() !void
 {
     if(builtin.os.tag == .windows)
@@ -191,8 +267,8 @@ pub fn main() !void
             _ = GlobalState.debugAllocator.deinit();
     }
 //     const float: f64 = -1.0;
-//     const int: u64 = @bitCast(float);
-//     CustomIO.print("d\n", .{int});
+//     const int: u64 = undefined;
+//     CustomIO.print("x\n", .{int});
 //     const stdout = CustomIO.stdout;
 //     const hello = "hello";
 //     const int: i32 = -113;
@@ -242,33 +318,12 @@ pub fn main() !void
 
     var AoW4_archive: AoW4_clb_custom.ArchiveGPU = undefined;
     defer AoW4_archive.unload();
-//     Title/Libraries/Strategic/Terrain_Textures_Strategic.clb
-//     for(0..20) |_|
-//     {
-//         AoW4_clb_custom.clb_custom_read(AoW4_dirfd, "customArchive.clb", &AoW4_archive);
-//         AoW4_archive.unload();
-//     }
-//     const string: []const u8 = "/tmp/customArchive.clb";
-//     const pub_const_PFN_vk: [*:0]const u8 = "pub const PFN_vk";
-//     print("{d}\n", .{pub_const_PFN_vk[16]});
     AoW4_clb_custom.clb_custom_read(AoW4_dirfd, "/tmp/customArchive.clb", &AoW4_archive);
-//     print("{d}\n", .{resourceIDs[@intFromEnum(ResourceID.@"Temp_Fertile_Fern_01_LushGrass")]});
     // Palette
 {
-    // Grassland 00
-//     var colorTable = [4*8]u8
-//     {
-//         98, 71, 41, 255,
-//         58, 71, 20, 255,
-//         84, 89, 32, 255,
-//         61, 92, 15, 255,
-//         61, 84, 20, 255,
-//         55, 92, 14, 255,
-//         46, 113, 19, 255,
-//         75, 109, 20, 255,
-//     };
+    // Temperate
     // Grassland 00 (Tropical)
-//     var colorTable = [4*8]u8
+//     const Tropical_Grassland_00 = [4*8]u8
 //     {
 //         129, 79,  43, 255,
 //         129, 79,  43, 255,
@@ -280,7 +335,7 @@ pub fn main() !void
 //         59,  36,  13, 255,
 //     };
     // Grassland 01
-//      var colorTable = [4*8]u8
+//      const colorTable = [4*8]u8
 //      {
 //          98, 71,  41, 255,
 //          58, 71,  20, 255,
@@ -291,18 +346,6 @@ pub fn main() !void
 //          39, 53,  12, 255,
 //          86, 99,  16, 255,
 //      };
-    // Forest 00
-//  var colorTable = [4*8]u8
-//  {
-//      72, 85, 20, 255,
-//      80, 82, 34, 255,
-//      57, 64, 34, 255,
-//      41, 50, 28, 255,
-//      82, 48, 17, 255,
-//      85, 65, 45, 255,
-//      75, 67, 53, 255,
-//      80, 64, 17, 255,
-//  };
     // Water Deep 00
 //     var colorTable = [4*8]u8
 //     {
@@ -329,24 +372,25 @@ pub fn main() !void
 // //         255, 255, 255,255,
 //     };
 }
-    var colorTable = [4*8]u8
+    const palettesCount = 4;
+    const colorTable = comptime ret:
     {
-        98, 71, 41, 255,
-        58, 71, 20, 255,
-        84, 89, 32, 255,
-        61, 92, 15, 255,
-        61, 84, 20, 255,
-        55, 92, 14, 255,
-        46, 113, 19, 255,
-        75, 109, 20, 255,
+        const palettesStrings = meta.fieldNames(ColorTable);
+        const colorTable = ColorTable{};
+        var colorTableLocal: [palettesCount][32]u8 = undefined;
+        for(0..palettesStrings.len) |i|
+        {
+            colorTableLocal[i] = @field(colorTable, palettesStrings[i]);
+        }
+        break :ret colorTableLocal;
     };
     const palette = Image
     {
-        .data = &colorTable,
-        .mipSize = 4*8,
-        .size = 4*8,
+        .data = @ptrCast(&colorTable),
+        .mipSize = 4*8*palettesCount,
+        .size = 4*8*palettesCount,
         .width = 8,
-        .height = 1,
+        .height = 1*palettesCount,
         .mipsCount = 1,
         .alignment = 1,
         .format = Vulkan.VK_FORMAT_R8G8B8A8_SRGB,
@@ -362,9 +406,6 @@ pub fn main() !void
     }
     Hex.createHexPaletteSampler();
     defer Vulkan.vkDestroySampler(VulkanGlobalState._device, Hex._paletteSampler, null);
-//     var palette_DescriptorSetLayout: Vulkan.VkDescriptorSetLayout = undefined;
-//     var palette_DescriptorPool: Vulkan.VkDescriptorPool = undefined;
-//     var palette_DescriptorSet: Vulkan.VkDescriptorSet = undefined;
     Hex.createPaletteDescriptorsData(paletteTexture.vkImageView, &Hex.palette_DescriptorSetLayout, &Hex.palette_DescriptorPool, &Hex.palette_DescriptorSet);
 
 //     Hex.Create_palette_VkDescriptorPool(&palette_DescriptorPool);
@@ -377,37 +418,10 @@ pub fn main() !void
 // }
     // Hex
     const distanceSize = 2;
-    const HexVertices = [6]Hex.Vertex
-    {
-        .{
-            .position = [3]f32{0, -1*distanceSize, 0},
-        },
-        .{
-            .position = [3]f32{@sqrt(3.0)/2.0*distanceSize, -0.5*distanceSize, 0},
-        },
-        .{
-            .position = [3]f32{@sqrt(3.0)/2.0*distanceSize, 0.5*distanceSize, 0},
-        },
-        .{
-            .position = [3]f32{0, 1*distanceSize, 0},
-        },
-        .{
-            .position = [3]f32{-@sqrt(3.0)/2.0*distanceSize, 0.5*distanceSize, 0},
-        },
-        .{
-            .position = [3]f32{-@sqrt(3.0)/2.0*distanceSize, -0.5*distanceSize, 0},
-        },
-    };
-    const HexIndices = [12]u16{
-        0, 2, 4,
-        0, 1, 2,
-        2, 3, 4,
-        4, 5, 0,
-    };
     var HexVkVertexBufferAddress: Vulkan.VkDeviceAddress = undefined;
     var HexVkVertexBuffer: Vulkan.VkBuffer = undefined;
     var HexVkVertexDeviceMemory: Vulkan.VkDeviceMemory = undefined;
-    VkBuffer.createVkBuffer__VkDeviceMemory__VkDeviceAddress(Vulkan.VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, @ptrCast(&HexVertices), @sizeOf(Hex.Vertex)*6, &HexVkVertexBufferAddress, &HexVkVertexBuffer, &HexVkVertexDeviceMemory);
+    VkBuffer.createVkBuffer__VkDeviceMemory__VkDeviceAddress(Vulkan.VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, @ptrCast(&HexVertices), @sizeOf([2]f32)*19, &HexVkVertexBufferAddress, &HexVkVertexBuffer, &HexVkVertexDeviceMemory);
 //     VkBuffer.createVkBuffer__VkDeviceMemory(Vulkan.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, @ptrCast(&SquareVertices), @sizeOf(Square.Vertex)*4, &HexVkVertexBuffer, &HexVkVertexDeviceMemory);
     defer
     {
@@ -416,7 +430,7 @@ pub fn main() !void
     }
     var HexVkIndexBuffer: Vulkan.VkBuffer = undefined;
     var HexVkIndexDeviceMemory: Vulkan.VkDeviceMemory = undefined;
-    VkBuffer.createVkBuffer__VkDeviceMemory(Vulkan.VK_BUFFER_USAGE_INDEX_BUFFER_BIT, @ptrCast(&HexIndices), @sizeOf(u16)*12, &HexVkIndexBuffer, &HexVkIndexDeviceMemory);
+    VkBuffer.createVkBuffer__VkDeviceMemory(Vulkan.VK_BUFFER_USAGE_INDEX_BUFFER_BIT, @ptrCast(&HexIndices), @sizeOf(u16)*72, &HexVkIndexBuffer, &HexVkIndexDeviceMemory);
 //     VkBuffer.createVkBuffer__VkDeviceMemory(Vulkan.VK_BUFFER_USAGE_INDEX_BUFFER_BIT, @ptrCast(&SquareIndices), @sizeOf(u16)*6, &HexVkIndexBuffer, &HexVkIndexDeviceMemory);
     defer
     {
@@ -467,8 +481,16 @@ pub fn main() !void
 //         Vulkan.vkDestroyBuffer(VulkanGlobalState._device, SquareVkIndexBuffer, null);
 //         Vulkan.vkFreeMemory(VulkanGlobalState._device, SquareVkIndexDeviceMemory, null);
 //     }
+//     var Square_Pipeline: Vulkan.VkPipeline = null;
+//     var Square_PipelineLayout: Vulkan.VkPipelineLayout = null;
+//     Square.Create_Square_Pipeline(noiseMap_DescriptorSetLayout, &Square_PipelineLayout, &Square_Pipeline);
+//     defer
+//     {
+//         Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Square_Pipeline, null);
+//         Vulkan.vkDestroyPipelineLayout(VulkanGlobalState._device, Square_PipelineLayout, null);
+//     }
 }
-    const mapRadius = 2;
+    const mapRadius = 50;
     comptime var hexesCount: u64 = 1;
     comptime
     {
@@ -481,12 +503,14 @@ pub fn main() !void
     }
     CustomIO.print("sd\n", .{"hexesCount: ", hexesCount});
     var hexesData: [hexesCount]Hex.HexData = undefined;
-    //
     for(0..hexesCount) |i|
     {
         hexesData[i].x = 0;
         hexesData[i].y = 0;
         hexesData[i].textureIndex = resourceID.@"SM_Fertile_Plains_Grass_01_TerrainTexture.tga";
+//         hexesData[i].textureIndex = resourceID.@"SM_Forest_Forest_01_TerrainTexture.tga";
+        hexesData[i].paletteIndex = @intFromEnum(TexturesEnum.Temperate_Grassland_00);
+//         hexesData[i].paletteIndex = @intFromEnum(TexturesEnum.Temperate_Forest_00);
     }
     const verticalSpacing = 1.5 * distanceSize;
     const horizontalSpacing = @sqrt(3.0) * distanceSize;
@@ -527,28 +551,52 @@ pub fn main() !void
             row+=1;
         }
     }
+    var hexexHeights: [hexesCount][HexVertices.len]f32 = undefined;
+    for(0..hexesCount) |hexIndex|
+    {
+        for(0..HexVertices.len) |vertexIndex|
+        {
+            const frequency = 1.0/32.0;
+            const coord: [2]f32 = [2]f32{hexesData[hexIndex].x + HexVertices[vertexIndex][0], hexesData[hexIndex].y + HexVertices[vertexIndex][1]};
+            hexexHeights[hexIndex][vertexIndex] = Simplexnoise1234.snoise2(coord[0]*frequency, coord[1]*frequency)*4;
+        }
+    }
 {
-//     var _000_025: u64 = 0;
-//     var _025_050: u64 = 0;
-//     var _050_075: u64 = 0;
-//     var _075_100: u64 = 0;
-//     for(0..mapDimension) |y|
-//     {
-//         for(0..mapDimension) |x|
-//         {
-//             const i = mapDimension*y+x;
-//             const horisontal: f32 =  horizontalSpacing * CustomMem.u64Tof32(x);
-//             const vertical: f32 = verticalSpacing * CustomMem.u64Tof32(y);
-//             if(y % 2 == 0)
-//             {
-//                 hexesData[i].x = horisontal;
-//                 hexesData[i].y = vertical;
-//             }
-//             else
-//             {
-//                 hexesData[i].x = horisontal - @sqrt(3.0)/2.0*distanceSize;
-//                 hexesData[i].y = vertical;
-//             }
+    var _000_025: u64 = 0;
+    var _025_050: u64 = 0;
+    var _050_075: u64 = 0;
+    var _075_100: u64 = 0;
+    for(0..hexesCount) |i|
+    {
+        const frequency = 1.0/32.0;
+        const noiseRes = (Simplexnoise1234.snoise2(hexesData[i].x*frequency, hexesData[i].y*frequency));
+//         hexesData[i].z = noiseRes*4;
+        hexesData[i].z = 0;
+        if(noiseRes < 0.25)
+        {
+            _000_025+=1;
+            hexesData[i].textureIndex = resourceID.@"SM_Forest_Forest_01_TerrainTexture.tga";
+            hexesData[i].paletteIndex = @intFromEnum(TexturesEnum.Arctic_Forest_00);
+        }
+        else if(noiseRes < 0.5)
+        {
+            _025_050+=1;
+            hexesData[i].textureIndex = resourceID.@"SM_Fertile_Plains_Grass_01_TerrainTexture.tga";
+            hexesData[i].paletteIndex = @intFromEnum(TexturesEnum.Temperate_Grassland_00);
+        }
+        else if(noiseRes < 0.75)
+        {
+            _050_075+=1;
+            hexesData[i].textureIndex = resourceID.@"SM_Forest_Forest_01_TerrainTexture.tga";
+            hexesData[i].paletteIndex = @intFromEnum(TexturesEnum.Temperate_Forest_00);
+        }
+        else
+        {
+            _075_100+=1;
+            hexesData[i].textureIndex = resourceID.@"SM_Forest_Forest_01_TerrainTexture.tga";
+            hexesData[i].paletteIndex = @intFromEnum(TexturesEnum.Sahara_Forest_00);
+        }
+    }
 //             const frequency = 1.0/32.0;
 //             const noiseRes = (Simplexnoise1234.snoise2(hexesData[i].x*frequency, hexesData[i].y*frequency));
 // //             const amplitude = 1.0+0.5+0.25;
@@ -556,54 +604,18 @@ pub fn main() !void
 // //             0.5*(Simplexnoise1234.snoise2(2*CustomMem.u64Tof32(x)*frequency, 2*CustomMem.u64Tof32(y)*frequency)) +
 // //             0.25*(Simplexnoise1234.snoise2(4*CustomMem.u64Tof32(x)*frequency, 4*CustomMem.u64Tof32(y)*frequency));
 // //             noiseRes /= amplitude;
-//             if(noiseRes < 0.25)
-//             {
-// //                 _000_025+=1;
-//                 hexesData[i].textureIndex = 4;
-//             }
-//             else if(noiseRes < 0.5)
-//             {
-// //                 _025_050+=1;
-//                 hexesData[i].textureIndex = 5;
-//             }
-//             else if(noiseRes < 0.75)
-//             {
-// //                 _050_075+=1;
-//                 hexesData[i].textureIndex = 9;
-//             }
-//             else
-//             {
-// //                 _075_100+=1;
-//                 hexesData[i].textureIndex = 11;
-//             }
-// //          17 — Forest 00
-// //          14 — Grass 01
-// //             hexesData[i].textureIndex = 9;
-// //          if(i % 4 == 0)
-// //          {
-// //             hexesData[i].textureIndex = 4;
-// //         }
-// //         else if(i % 4 == 1)
-// //         {
-// //             hexesData[i].textureIndex = 5;
-// //         }
-// //         else if(i % 4 == 2)
-// //         {
-// //             hexesData[i].textureIndex = 9;
-// //         }
-// //         else if(i % 4 == 3)
-// //         {
-// //             hexesData[i].textureIndex = 11;
-// //         }
-// //         else
-// //         {hexesData[i].textureIndex = 0;}
-//         }
-//     }
-//     print("00 — 25: {d}\n", .{_000_025});
-//     print("25 — 50: {d}\n", .{_025_050});
-//     print("50 — 75: {d}\n", .{_050_075});
-//     print("75 — 100: {d}\n", .{_075_100});
+    CustomIO.print("sd\n", .{"00 — 25: ",_000_025});
+    CustomIO.print("sd\n", .{"25 — 50: ",_025_050});
+    CustomIO.print("sd\n", .{"50 — 75: ",_050_075});
+    CustomIO.print("sd\n", .{"75 — 100: ",_075_100});
 }
+    // Hex vertices heights
+    var hexesHeightVkDeviceAddress: Vulkan.VkDeviceAddress = undefined;
+    var hexesHeightBuffer: Vulkan.VkBuffer = undefined;
+    var hexesHeightVkDeviceMemory: Vulkan.VkDeviceMemory = undefined;
+    VkBuffer.createVkBuffer__VkDeviceMemory__VkDeviceAddress(Vulkan.VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, @ptrCast(&hexexHeights), 4*hexesCount*HexVertices.len, &hexesHeightVkDeviceAddress,&hexesHeightBuffer, &hexesHeightVkDeviceMemory);
+
+
     // Vertex instance buffer
     var hexesDataVkDeviceAddress: Vulkan.VkDeviceAddress = undefined;
     var hexesDataBuffer: Vulkan.VkBuffer = undefined;
@@ -624,6 +636,9 @@ pub fn main() !void
     }
     defer
     {
+        Vulkan.vkDestroyBuffer(VulkanGlobalState._device, hexesHeightBuffer, null);
+        Vulkan.vkFreeMemory(VulkanGlobalState._device, hexesHeightVkDeviceMemory, null);
+
         Vulkan.vkDestroyBuffer(VulkanGlobalState._device, hexesDataBuffer, null);
         Vulkan.vkFreeMemory(VulkanGlobalState._device, hexesDataVkDeviceMemory, null);
 
@@ -701,14 +716,6 @@ pub fn main() !void
 //         Vulkan.vkDestroyDescriptorPool(VulkanGlobalState._device, noiseMap_DescriptorPool, null);
 //     }
 }
-//     var Square_Pipeline: Vulkan.VkPipeline = null;
-//     var Square_PipelineLayout: Vulkan.VkPipelineLayout = null;
-//     Square.Create_Square_Pipeline(noiseMap_DescriptorSetLayout, &Square_PipelineLayout, &Square_Pipeline);
-//     defer
-//     {
-//         Vulkan.vkDestroyPipeline(VulkanGlobalState._device, Square_Pipeline, null);
-//         Vulkan.vkDestroyPipelineLayout(VulkanGlobalState._device, Square_PipelineLayout, null);
-//     }
 
     var e: SDL.SDL_Event = undefined;
     var bQuit: bool = false;
@@ -918,7 +925,8 @@ pub fn main() !void
             var hexPushConstants: [32]u8 align(8) = undefined;
             alignPtrCast(*u64, &hexPushConstants[0]).* = HexVkVertexBufferAddress;
             alignPtrCast(*u64, &hexPushConstants[8]).* = hexesDataVkDeviceAddress;
-            Vulkan.vkCmdPushConstants(cmd, Hex.Hex_PipelineLayout, Vulkan.VK_SHADER_STAGE_VERTEX_BIT, 0, 16, &hexPushConstants);
+            alignPtrCast(*u64, &hexPushConstants[16]).* = hexesHeightVkDeviceAddress;
+            Vulkan.vkCmdPushConstants(cmd, Hex.Hex_PipelineLayout, Vulkan.VK_SHADER_STAGE_VERTEX_BIT, 0, 24, &hexPushConstants);
             var descriptorSets: [3]Vulkan.VkDescriptorSet = undefined;
             descriptorSets[0] = Camera._cameraDescriptorSets[currentFrame];
             descriptorSets[1] = AoW4_archive.descriptorSet;
@@ -926,7 +934,7 @@ pub fn main() !void
             Vulkan.vkCmdBindDescriptorSets(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Hex.Hex_PipelineLayout, 0, 3, &descriptorSets, 0, null);
 //             Vulkan.vkCmdDraw(VulkanGlobalState._commandBuffers[currentFrame], 12, hexesCount, 0, 0);
             Vulkan.vkCmdBindIndexBuffer(VulkanGlobalState._commandBuffers[currentFrame], HexVkIndexBuffer, 0, Vulkan.VK_INDEX_TYPE_UINT16);
-            Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], 12, hexesCount, 0, 0, 0);
+            Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], 72, hexesCount, 0, 0, 0);
 
             // ferns
             Vulkan.vkCmdBindDescriptorSets(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines.FernSolid_PipelineLayout, 0, 2, &descriptorSets, 0, null);
@@ -939,24 +947,29 @@ pub fn main() !void
 
             Vulkan.vkCmdBindIndexBuffer(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshesVkBuffer, AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].indexVkBufferOffset, Vulkan.VK_INDEX_TYPE_UINT16);
 
-            const camera_x = Camera.camera_translate_x;
-            const camera_y = Camera.camera_translate_y;
-            const camera_z = -Camera.camera_translate_z;
+//             const camera_x = -Camera.camera_translate_x;
+//             const camera_y = -Camera.camera_translate_y;
+//             const camera_z = -Camera.camera_translate_z;
 
-            var hexesDrawCount: u32 = 0;
-            for(0..hexesCount) |hexIndex|
-            {
-                if(hexesData[hexIndex].x < camera_x+camera_z
-                    and hexesData[hexIndex].x > camera_x-camera_z
-                    and hexesData[hexIndex].y < camera_y+camera_z
-                    and hexesData[hexIndex].y > camera_y-camera_z
-                )
-                {
-                    alignPtrCast([*][2]f32, hexesPosMapped)[hexesDrawCount][0] = hexesData[hexIndex].x;
-                    alignPtrCast([*][2]f32, hexesPosMapped)[hexesDrawCount][1] = hexesData[hexIndex].y;
-                    hexesDrawCount+=1;
-                }
-            }
+//             var hexesDrawCount: u32 = 0;
+//             for(0..hexesCount) |hexIndex|
+//             {
+//                 if(hexesData[hexIndex].x < camera_x+camera_z
+//                     and hexesData[hexIndex].x > camera_x-camera_z
+//                     and hexesData[hexIndex].y < camera_y+camera_z
+//                     and hexesData[hexIndex].y > camera_y-camera_z)
+//                 {
+//                     if(hexesData[hexIndex].paletteIndex == @intFromEnum(TexturesEnum.Temperate_Grassland_00))
+//                     {
+//                         alignPtrCast([*][2]f32, hexesPosMapped)[hexesDrawCount][0] = hexesData[hexIndex].x;
+//                         alignPtrCast([*][2]f32, hexesPosMapped)[hexesDrawCount][1] = hexesData[hexIndex].y;
+//                         hexesDrawCount+=1;
+//                     }
+// //                     alignPtrCast([*][2]f32, hexesPosMapped)[hexesDrawCount][0] = hexesData[hexIndex].x;
+// //                     alignPtrCast([*][2]f32, hexesPosMapped)[hexesDrawCount][1] = hexesData[hexIndex].y;
+// //                     hexesDrawCount+=1;
+//                 }
+//             }
 //             Vulkan.vkCmdBindPipeline(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines.FernSolid_Pipeline);
 //             Vulkan.vkCmdDrawIndexed(VulkanGlobalState._commandBuffers[currentFrame], AoW4_archive.meshes[resourceID.@"Temp_Fertile_Fern_01_LushGrass"].indicesCount, hexesDrawCount, 0, 0, 0);
 //             Vulkan.vkCmdBindPipeline(VulkanGlobalState._commandBuffers[currentFrame], Vulkan.VK_PIPELINE_BIND_POINT_GRAPHICS, Pipelines.FernTransparency_Pipeline);

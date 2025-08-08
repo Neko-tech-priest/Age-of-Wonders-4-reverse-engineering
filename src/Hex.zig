@@ -17,15 +17,90 @@ pub const HexData = struct
 {
 	x: f32,
 	y: f32,
+    z: f32,
     textureIndex: u32,
-//     alignment: u32,
+    paletteIndex: u32,
 };
-pub const Vertex = struct
+// pub const Vertex = struct
+// {
+// //     position: [3]f32 align(16),
+//     position: [2]f32
+// };
+fn _2f32Add(vec1: [2]f32, vec2: [2]f32) [2]f32
 {
-//     position: [3]f32 align(16),
-	position: [3]f32
-};
+    return [2]f32{vec1[0]+vec2[0], vec1[1]+vec2[1]};
+}
+pub fn createHexVertices() [19][2]f32
+{
+    const distanceSize = 2;
+    const corePos = [6][2]f32
+    {
+        [2]f32{0, -1*distanceSize},
+        [2]f32{@sqrt(3.0)/2.0*distanceSize, -0.5*distanceSize},
+        [2]f32{@sqrt(3.0)/2.0*distanceSize, 0.5*distanceSize},
+        [2]f32{0, 1*distanceSize},
+        [2]f32{-@sqrt(3.0)/2.0*distanceSize, 0.5*distanceSize},
+        [2]f32{-@sqrt(3.0)/2.0*distanceSize, -0.5*distanceSize},
+    };
+    var hexVertices: [19][2]f32 = undefined;
+    hexVertices[0] = [2]f32{0,0};
+    var vertexIndex: u64 = 1;
+    for(0..6) |i|
+    {
+        hexVertices[vertexIndex] = [2]f32{corePos[i][0]*0.5, corePos[i][1]*0.5};
+        vertexIndex+=1;
+    }
+    for(0..6) |i|
+    {
+        hexVertices[vertexIndex] = corePos[i];
+        const vec2 = _2f32Add(corePos[i], corePos[(i+1)%6]);
+        hexVertices[vertexIndex+1] = [2]f32{vec2[0]/2, vec2[1]/2};
+        vertexIndex+=2;
+    }
+    return hexVertices;
+}
+pub fn createHexIndices() [72]u16
+{
+//     const hexIndices = [12]u16{
+//         0, 2, 4,
+//         0, 1, 2,
+//         2, 3, 4,
+//         4, 5, 0,
+//     };
+    const hexIndices = [72]u16{
+        0, 1, 2,
+        0, 2, 3,
+        0, 3, 4,
+        0, 4, 5,
+        0, 5, 6,
+        0, 6, 1,
 
+        1, 7, 8,
+        1, 8, 2,
+        2, 8, 9,
+
+        2, 9, 10,
+        2, 10, 3,
+        3, 10, 11,
+
+        3, 11, 12,
+        3, 12, 4,
+        4, 12, 13,
+
+        4, 13, 14,
+        4, 14, 5,
+        5, 14, 15,
+
+        5, 15, 16,
+        5, 16, 6,
+        6, 16, 17,
+
+        6, 17, 18,
+        6, 18, 1,
+        1, 18, 7,
+    };
+    return hexIndices;
+}
 pub fn Create_DiffuseMaterial_VkDescriptorSetLayout(texturesCount: u32, descriptorSetLayout: *Vulkan.VkDescriptorSetLayout) void
 {
 	const descriptorSetLayoutBindings = [2]Vulkan.VkDescriptorSetLayoutBinding
@@ -366,7 +441,7 @@ pub fn Create_Hex_Pipeline(texturesDescriptorSetLayout: Vulkan.VkDescriptorSetLa
     {
         .stageFlags = Vulkan.VK_SHADER_STAGE_VERTEX_BIT,
         .offset = 0,
-        .size = 16,
+        .size = 24,
     };
 	const pipelineLayoutInfo = Vulkan.VkPipelineLayoutCreateInfo
 	{

@@ -117,7 +117,7 @@ pub fn createVkBuffer__VkDeviceMemory(usage: Vulkan.VkBufferUsageFlags, buffer: 
 	_ = Vulkan.vkQueueSubmit(VulkanGlobalState._graphicsQueue, 1, &submitInfo, null);
 	_ = Vulkan.vkQueueWaitIdle(VulkanGlobalState._graphicsQueue);
 }
-pub fn createVkBuffer__VkDeviceMemory__VkDeviceAddress(usage: Vulkan.VkBufferUsageFlags, buffer: [*]const u8, size: usize, deviceAddress: *Vulkan.VkDeviceAddress, vkBuffer: *Vulkan.VkBuffer, vkDeviceMemory: *Vulkan.VkDeviceMemory) void
+pub fn createVkBuffer__VkDeviceMemory__VkDeviceAddress(comptime usage: Vulkan.VkBufferUsageFlags, buffer: [*]const u8, size: usize, deviceAddress: *Vulkan.VkDeviceAddress, vkBuffer: *Vulkan.VkBuffer, vkDeviceMemory: *Vulkan.VkDeviceMemory) void
 {
     var sizeDeviceMemory: usize = 0;
     var memRequirements: Vulkan.VkMemoryRequirements = undefined;

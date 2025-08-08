@@ -4,7 +4,7 @@ const Vulkan = @import("Vulkan.zig");
 
 pub const Image = struct
 {
-	data: [*]u8,
+	data: [*]const u8,
     size: u32,
 	mipSize: u32,
 	width: u16,
